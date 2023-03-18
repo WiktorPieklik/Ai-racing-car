@@ -1,8 +1,8 @@
 from abc import ABC
-from utils import Window, Image, rotate_image
+from utils import Window, Image, rotate_image, scale_image
 from assets import CAR
 from typing import Tuple
-import pygame
+from math import radians, cos, sin
 
 
 class Car(ABC):
@@ -12,7 +12,8 @@ class Car(ABC):
             start_position: Tuple[int, int],
             max_velocity: float,
             rotation_velocity: float,
-            start_angle: float = .0
+            start_angle: float = .0,
+            acceleration: float = .15
     ):
         self._img = img
         self._x, self._y = start_position
@@ -20,6 +21,7 @@ class Car(ABC):
         self._velocity = .0
         self._rotation_velocity = rotation_velocity
         self._angle = start_angle
+        self._acceleration = acceleration
 
     @property
     def max_velocity(self) -> float:
@@ -49,6 +51,10 @@ class Car(ABC):
     def y(self) -> int:
         return self._y
 
+    @property
+    def acceleration(self) -> float:
+        return self._acceleration
+
     def rotate(self, left: bool = False) -> None:
         if left:
             self._angle += self._rotation_velocity
@@ -58,6 +64,21 @@ class Car(ABC):
     def draw(self, window: Window) -> None:
         rotate_image(window=window, image=self._img, top_left=(self._x, self._y), angle=self._angle)
 
+    def accelerate(self) -> None:
+        self._velocity = min(self._velocity + self._acceleration, self._max_velocity)
+        self.move()
+
+    def move(self) -> None:
+        rad = radians(self._angle)
+        dx = cos(rad) * self._velocity
+        dy = sin(rad) * self._velocity
+        self._x += dx
+        self._y -= dy
+
+    def inertia(self):
+        self._velocity = max(self._velocity - self._acceleration / 2, 0)
+        self.move()
+
 
 class PlayerCar(Car):
     def __init__(
@@ -65,12 +86,14 @@ class PlayerCar(Car):
             max_velocity: float,
             rotation_velocity: float,
             start_position: Tuple[int, int] = (0, 0),
-            start_angle: float = .0
+            start_angle: float = .0,
+            acceleration: float = .15
     ):
         super().__init__(
-            img=CAR,
+            img=scale_image(CAR, .65),
             start_position=start_position,
             max_velocity=max_velocity,
             rotation_velocity=rotation_velocity,
-            start_angle=start_angle
+            start_angle=start_angle,
+            acceleration=acceleration
         )
