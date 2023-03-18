@@ -68,6 +68,10 @@ class Car(ABC):
         self._velocity = min(self._velocity + self._acceleration, self._max_velocity)
         self.move()
 
+    def decelerate(self) -> None:
+        self._velocity = max(self._velocity - 1.85 * self._acceleration, 0)
+        self.move()
+
     def move(self) -> None:
         rad = radians(self._angle)
         dx = cos(rad) * self._velocity
