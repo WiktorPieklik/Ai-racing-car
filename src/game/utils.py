@@ -1,5 +1,7 @@
-from pygame import Surface, SurfaceType
+from pygame import Surface, SurfaceType, Mask
+from pygame.mask import from_surface
 from pygame.transform import scale, rotate
+from pygame.font import SysFont
 from typing import Union, Tuple
 
 Window = Union[Surface, SurfaceType]
@@ -16,3 +18,18 @@ def rotate_image(window: Window, image: Image, top_left: Tuple[int, int], angle:
     rotated = rotate(image, angle)
     new_rectangle = rotated.get_rect(center=image.get_rect(topleft=top_left).center)
     window.blit(rotated, new_rectangle.topleft)
+
+
+def get_mask(surface: Image, inverted: bool = False) -> Mask:
+    mask = from_surface(surface)
+    if inverted:
+        mask.invert()
+
+    return mask
+
+
+def display_text_center(window: Window, text: str, font: SysFont, color: Tuple[int, int, int] = (255, 255, 255)) -> None:
+    render = font.render(text, True, color)
+    center_x = window.get_width() / 2 - render.get_width() / 2
+    center_y = window.get_height() / 2 - render.get_height() / 2
+    window.blit(render, (center_x, center_y))
