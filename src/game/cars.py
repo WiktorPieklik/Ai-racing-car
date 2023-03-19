@@ -1,8 +1,10 @@
 from abc import ABC
-from utils import Window, Image, rotate_image, scale_image
+from utils import Window, Image, rotate_image, scale_image, get_mask
 from assets import CAR
-from typing import Tuple
+from typing import Tuple, Optional
 from math import radians, cos, sin
+from pygame import Mask
+from pygame.mask import from_surface
 
 
 class Car(ABC):
@@ -16,6 +18,7 @@ class Car(ABC):
             acceleration: float = .15
     ):
         self._img = img
+        self._mask = get_mask(self._img)
         self._x, self._y = start_position
         self._max_velocity = max_velocity
         self._velocity = .0
@@ -82,6 +85,16 @@ class Car(ABC):
     def inertia(self):
         self._velocity = max(self._velocity - self._acceleration / 2, 0)
         self.move()
+
+    def bounce(self):
+        self._velocity = - self._velocity
+        self.move()
+
+    def is_colliding(self, mask: Mask, x: int = 0, y: int = 0) -> Optional[Tuple[int, int]]:
+        offset = (int(self.x - x), int(self.y - y))
+        poi = mask.overlap(self._mask, offset)  # point of intersection
+
+        return poi
 
 
 class PlayerCar(Car):
