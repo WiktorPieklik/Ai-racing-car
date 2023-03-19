@@ -1,10 +1,12 @@
 from abc import ABC
+
+from pygame import Color
+
 from utils import Window, Image, rotate_image, scale_image, get_mask
 from assets import CAR
-from typing import Tuple, Optional
+from typing import Tuple, Optional, Callable
 from math import radians, cos, sin
 from pygame import Mask
-from pygame.mask import from_surface
 
 
 class Car(ABC):
@@ -25,6 +27,10 @@ class Car(ABC):
         self._rotation_velocity = rotation_velocity
         self._angle = start_angle
         self._acceleration = acceleration
+        # 1244, 1016
+
+    def get_rect_center(self) -> Tuple[int, int]:
+        return self.img.get_rect(topleft=(self._x, self._y)).center
 
     @property
     def max_velocity(self) -> float:
@@ -95,6 +101,21 @@ class Car(ABC):
         poi = mask.overlap(self._mask, offset)  # point of intersection
 
         return poi
+
+    def radar(self, window: Window, angle: float):
+        length = 0
+        x, y = self.get_rect_center()
+
+        while window.get_at((x, y)) != Color(0, 0, 0, 0) and length < 200:
+            length += 1
+            x, y = self.get_rect_center()
+            x = int(x + cos(radians(self._angle + angle)) * length)
+            y = int(y - sin(radians(self._angle + angle)) * length)
+
+        line = ((255, 255, 255), self.get_rect_center(), (x, y), 1)
+        circle = ((0, 255, 0) if length == 200 else (255, 0, 0), (x, y), 3)
+
+        return line, circle
 
 
 class PlayerCar(Car):
