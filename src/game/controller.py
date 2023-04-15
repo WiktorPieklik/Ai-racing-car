@@ -4,7 +4,7 @@ import pygame
 from decouple import config
 
 from .meta import GameState, MapMeta, MapType
-from .utils import Window, display_text_center, Point
+from .utils import Window, display_text_center, display_text
 from .assets import MAIN_FONT
 from .cars import PlayerCar
 
@@ -63,6 +63,10 @@ class GameController:
 
         pygame.display.update()
 
+    def _init_monit(self) -> None:
+        display_text_center(self._window, f"Press any key to start {self._state.level} level!", MAIN_FONT)
+        pygame.display.update()
+
     def _draw_player_car_radars(self) -> None:
         radars_angle = (-60, -30, 0, 30, 60)
         for angle in radars_angle:
@@ -88,40 +92,52 @@ class GameController:
         if not changing_velocity:
             self._player_car.inertia()
 
-    def run(self) -> None:
-        self._clock.tick(self._fps)
+    def _handle_idleness(self) -> None:
+        pygame.event.clear()
+        while True:
+            keydown = pygame.event.get(pygame.KEYDOWN)
+            should_quit = pygame.event.get(pygame.QUIT)
+            if should_quit:
+                self._run = False
+                break
+            if keydown:
+                self._state.start_level()
+                self._reset_player_car()
+                self._run = True
+                break
 
+    def run(self) -> None:
         while self._run:
+            self._clock.tick(self._fps)
+            game_over = False
             self._draw()
-            #region game idle & stop
+            # region game idle & stop
             if not self._state.level_started:
-                display_text_center(self._window, f"Press any key to start {self._state.level} level!", MAIN_FONT)
-                pygame.display.update()
-                while True:
-                    keydown = pygame.event.get(pygame.KEYDOWN)
-                    should_quit = pygame.event.get(pygame.QUIT)
-                    if should_quit:
-                        self._run = False
-                        break
-                    if keydown:
-                        self._state.start_level()
-                        break
+                self._init_monit()
+                self._handle_idleness()
 
             if pygame.event.get(pygame.QUIT):
                 self._run = False
                 break
-            #endregion
+            # endregion
             self._player_controls()
             if self._player_car.is_colliding(self._map_meta.borders_mask):
-                print("Out of the track")
+                self._player_car.alive = False
+                game_over = True
 
             crossed_finish_line_poi = self._player_car.is_colliding(self._map_meta.finish_line_mask)
             if crossed_finish_line_poi:
                 if crossed_finish_line_poi[1] > self._map_meta.finish_line_crossing_point:
-                    print(crossed_finish_line_poi[1])
                     self._player_car.bounce()
+                    print(crossed_finish_line_poi[1])
                 else:
                     self._reset_player_car()
                     self._state.next_level()
+
+            if game_over:
+                display_text(self._window, "You loser!", MAIN_FONT, (810, 0))
+                self._state.reset()
+                self._init_monit()
+                self._handle_idleness()
 
         pygame.quit()
