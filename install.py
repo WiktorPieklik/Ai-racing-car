@@ -2,7 +2,8 @@ from sys import executable
 from subprocess import check_call
 
 dependencies = [
-    'pygame'
+    'pygame',
+    'python-decouple'
 ]
 
 if __name__ == "__main__":
