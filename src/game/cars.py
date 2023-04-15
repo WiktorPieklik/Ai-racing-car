@@ -115,6 +115,12 @@ class Car(ABC):
 
         return line, circle
 
+    def reset(self, x: int, y: int, angle: int) -> None:
+        self._x = x
+        self._y = y
+        self._angle = angle
+        self._velocity = 0
+
 
 class PlayerCar(Car):
     def __init__(
