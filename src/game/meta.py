@@ -16,8 +16,9 @@ from assets import (
 
 
 class GameState:
-    def __init__(self, level: int = 1):
+    def __init__(self, level: int = 1, max_levels: int = 5):
         self._level = level
+        self._max_levels = max_levels
         self._started = False
         self._start_time = 0
 
@@ -39,7 +40,7 @@ class GameState:
         self._start_time = 0
 
     def is_game_finished(self) -> bool:
-        return self._level > 10  # 10 level by default so far
+        return self._level > self._max_levels
 
     def start_level(self) -> None:
         self._started = True
