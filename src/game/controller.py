@@ -21,7 +21,7 @@ class GameController:
             hardcore: bool = False
     ):
         self._map_meta = MapMeta(map_type)
-        self._draw_radars = draw_radars
+        self._draw_radars = draw_radars or hardcore
         self._hardcore = hardcore
         self._state = GameState(max_levels=max_levels)
         self._player_car = PlayerCar(
