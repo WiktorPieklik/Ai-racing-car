@@ -1,11 +1,14 @@
+from typing import Union, Tuple
+from math import sqrt
+
 from pygame import Surface, SurfaceType, Mask
 from pygame.mask import from_surface
 from pygame.transform import scale, rotate
 from pygame.font import SysFont
-from typing import Union, Tuple
 
 Window = Union[Surface, SurfaceType]
 Image = Union[Surface, SurfaceType]
+Point = Tuple[int, int]
 
 
 def scale_image(img: Image, factor: float) -> Image:
@@ -38,3 +41,10 @@ def display_text_center(
     center_x = window.get_width() / 2 - render.get_width() / 2
     center_y = window.get_height() / 2 - render.get_height() / 2
     window.blit(render, (center_x, center_y))
+
+
+def distance(a: Point, b: Point) -> float:
+    dx = a[0] - b[0]
+    dy = a[1] - b[1]
+
+    return sqrt(dx**2 + dy**2)

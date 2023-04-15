@@ -3,7 +3,9 @@ from .utils import (
     Window,
     rotate_image,
     scale_image,
-    display_text_center
+    display_text_center,
+    distance,
+    Point
 )
 from .assets import (
     CAR,

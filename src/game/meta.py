@@ -6,7 +6,7 @@ from typing import Union, Tuple
 
 from pygame import Mask, Surface
 
-from .utils import get_mask
+from .utils import get_mask, Point
 from .assets import (
     CIRCLE_TRACK,
     FINISH_LINE_CIRCLE_TRACK,
@@ -60,7 +60,6 @@ class MapType(Enum):
     PWR = 3
 
 
-Point = Tuple[int, int]
 Position = Tuple[Point, Point]
 
 
@@ -69,6 +68,7 @@ class MapMeta:
         self._map_type = map_type
         self._track, self._finish_line = self._load_assets()
         self._finish_line_coord, (self._car_initial_pos, self._car_initial_angle) = self._get_positions()
+        self._finish_line_crossing_point = self._get_crossing_point()
 
     @property
     def map_type(self) -> MapType:
@@ -97,6 +97,10 @@ class MapMeta:
     @property
     def finish_line_coord(self) -> Position:
         return self._finish_line_coord
+
+    @property
+    def finish_line_crossing_point(self) -> int:
+        return self._finish_line_crossing_point
 
     @property
     def car_initial_pos(self) -> Point:
@@ -138,3 +142,11 @@ class MapMeta:
             car_angle = 0
 
         return finish_line_coord, (car_initial_pos, car_angle)
+
+    def _get_crossing_point(self) -> int:
+        if self.map_type == MapType.CIRCLE:
+            return 660
+        elif self.map_type == MapType.W_SHAPED:
+            return 10
+        else:
+            return 10
