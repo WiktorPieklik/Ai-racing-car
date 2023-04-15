@@ -4,6 +4,7 @@ from .utils import (
     rotate_image,
     scale_image,
     display_text_center,
+    display_text,
     distance,
     Point
 )

@@ -31,6 +31,17 @@ def get_mask(surface: Image, inverted: bool = False) -> Mask:
     return mask
 
 
+def display_text(
+        window: Window,
+        text: str,
+        font: SysFont,
+        pos: Point,
+        color: Tuple[int, int, int] = (255, 255, 255)
+) -> None:
+    render = font.render(text, True, color)
+    window.blit(render, pos)
+
+
 def display_text_center(
         window: Window,
         text: str,
@@ -40,7 +51,7 @@ def display_text_center(
     render = font.render(text, True, color)
     center_x = window.get_width() / 2 - render.get_width() / 2
     center_y = window.get_height() / 2 - render.get_height() / 2
-    window.blit(render, (center_x, center_y))
+    display_text(window, text, font, (center_x, center_y), color)
 
 
 def distance(a: Point, b: Point) -> float:
