@@ -15,4 +15,4 @@ from .assets import (
     FINISH_LINE_PWR_TRACK
 )
 from .cars import PlayerCar, Car
-from .state import GameState
+from .meta import GameState, MapMeta, MapType
