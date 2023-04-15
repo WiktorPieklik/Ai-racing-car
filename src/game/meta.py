@@ -67,7 +67,7 @@ class MapMeta:
     def __init__(self, map_type: MapType):
         self._map_type = map_type
         self._track, self._finish_line = self._load_assets()
-        self._finish_line_coord, (self._car_initial_pos, self._car_initial_angle) = self._get_positions()
+        self._car_initial_pos, self._car_initial_angle = self._get_positions()
         self._finish_line_crossing_point = self._get_crossing_point()
 
     @property
@@ -93,10 +93,6 @@ class MapMeta:
     @property
     def finish_line_mask(self) -> Mask:
         return get_mask(self._finish_line)
-
-    @property
-    def finish_line_coord(self) -> Position:
-        return self._finish_line_coord
 
     @property
     def finish_line_crossing_point(self) -> int:
@@ -125,28 +121,25 @@ class MapMeta:
 
         return track, finish_line
 
-    def _get_positions(self) -> Tuple[Position, Tuple[Point, int]]:
-        """ Returns (finish_line_coord, (car_initial_pos, car_angle)) """
+    def _get_positions(self) -> Tuple[Point, int]:
+        """ Returns (car_initial_pos, car_angle)) """
 
         if self.map_type == MapType.CIRCLE:
-            finish_line_coord = ((377, 740), (546, 646))
             car_initial_pos = (462, 713)
             car_angle = 310
         elif self.map_type == MapType.W_SHAPED:
-            finish_line_coord = ((0, 0), (0, 0))  # TODO: update later
-            car_initial_pos = (0, 0)
-            car_angle = 0
+            car_initial_pos = (490, 763)
+            car_angle = 300
         else:
-            finish_line_coord = ((0, 0), (0, 0))  # TODO: update later
-            car_initial_pos = (0, 0)
-            car_angle = 0
+            car_initial_pos = (115, 703)
+            car_angle = 275
 
-        return finish_line_coord, (car_initial_pos, car_angle)
+        return car_initial_pos, car_angle
 
     def _get_crossing_point(self) -> int:
         if self.map_type == MapType.CIRCLE:
             return 660
         elif self.map_type == MapType.W_SHAPED:
-            return 10
+            return 700
         else:
-            return 10
+            return 628
