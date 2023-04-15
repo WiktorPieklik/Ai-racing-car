@@ -1,11 +1,10 @@
 from abc import ABC
+from typing import Tuple, Optional
+from math import radians, cos, sin
 
 from pygame import Color
-
 from utils import Window, Image, rotate_image, scale_image, get_mask
 from assets import CAR
-from typing import Tuple, Optional, Callable
-from math import radians, cos, sin
 from pygame import Mask
 
 
@@ -27,7 +26,6 @@ class Car(ABC):
         self._rotation_velocity = rotation_velocity
         self._angle = start_angle
         self._acceleration = acceleration
-        # 1244, 1016
 
     def get_rect_center(self) -> Tuple[int, int]:
         return self.img.get_rect(topleft=(self._x, self._y)).center

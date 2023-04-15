@@ -28,7 +28,12 @@ def get_mask(surface: Image, inverted: bool = False) -> Mask:
     return mask
 
 
-def display_text_center(window: Window, text: str, font: SysFont, color: Tuple[int, int, int] = (255, 255, 255)) -> None:
+def display_text_center(
+        window: Window,
+        text: str,
+        font: SysFont,
+        color: Tuple[int, int, int] = (255, 255, 255)
+) -> None:
     render = font.render(text, True, color)
     center_x = window.get_width() / 2 - render.get_width() / 2
     center_y = window.get_height() / 2 - render.get_height() / 2

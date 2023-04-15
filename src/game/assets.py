@@ -1,6 +1,5 @@
 from pathlib import Path
 from pygame.image import load
-from pygame.mask import from_surface
 
 RAW_DIR = Path(".") / "raw"
 
