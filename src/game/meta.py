@@ -142,4 +142,4 @@ class MapMeta:
         elif self.map_type == MapType.W_SHAPED:
             return 700
         else:
-            return 628
+            return 640
