@@ -1,5 +1,5 @@
 from abc import ABC
-from typing import Tuple, Optional
+from typing import Tuple, Optional, Callable
 from math import radians, cos, sin
 
 from pygame import Color, Mask
@@ -26,6 +26,7 @@ class Car(ABC):
         self._rotation_velocity = rotation_velocity
         self._angle = start_angle
         self._acceleration = acceleration
+        self.alive = True
 
     def get_rect_center(self) -> Tuple[int, int]:
         return self.img.get_rect(topleft=(self._x, self._y)).center
@@ -80,11 +81,12 @@ class Car(ABC):
         self.move()
 
     def move(self) -> None:
-        rad = radians(self._angle)
-        dx = cos(rad) * self._velocity
-        dy = sin(rad) * self._velocity
-        self._x += dx
-        self._y -= dy
+        if self.alive:
+            rad = radians(self._angle)
+            dx = cos(rad) * self._velocity
+            dy = sin(rad) * self._velocity
+            self._x += dx
+            self._y -= dy
 
     def inertia(self):
         self._velocity = max(self._velocity - self._acceleration / 2, 0)
@@ -120,6 +122,7 @@ class Car(ABC):
         self._y = y
         self._angle = angle
         self._velocity = 0
+        self.alive = True
 
 
 class PlayerCar(Car):
