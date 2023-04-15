@@ -66,7 +66,7 @@ class MapMeta:
     def __init__(self, map_type: MapType):
         self._map_type = map_type
         self._track, self._borders, self._finish_line = self._load_assets()
-        self._finish_line_coord, (self._car_initial_pos, self._car_initial_angle) = self.get_positions()
+        self._finish_line_coord, (self._car_initial_pos, self._car_initial_angle) = self._get_positions()
 
     @property
     def map_type(self) -> MapType:
@@ -114,7 +114,7 @@ class MapMeta:
 
         return track, borders, finish_line
 
-    def get_positions(self) -> Tuple[Position, Tuple[Point, int]]:
+    def _get_positions(self) -> Tuple[Position, Tuple[Point, int]]:
         """ Returns (finish_line_coord, (car_initial_pos, car_angle)) """
 
         if self.map_type == MapType.CIRCLE:
