@@ -2,10 +2,10 @@ from abc import ABC
 from typing import Tuple, Optional
 from math import radians, cos, sin
 
-from pygame import Color
-from utils import Window, Image, rotate_image, scale_image, get_mask
-from assets import CAR
-from pygame import Mask
+from pygame import Color, Mask
+
+from .utils import Window, Image, rotate_image, scale_image, get_mask
+from .assets import CAR
 
 
 class Car(ABC):

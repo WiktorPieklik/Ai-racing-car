@@ -3,9 +3,11 @@ from __future__ import annotations
 from time import time
 from enum import Enum
 from typing import Union, Tuple
-from utils import get_mask
-from pygame import Mask
-from assets import (
+
+from pygame import Mask, Surface
+
+from .utils import get_mask
+from .assets import (
     CIRCLE_TRACK,
     FINISH_LINE_CIRCLE_TRACK,
     W_TRACK,
@@ -65,7 +67,7 @@ Position = Tuple[Point, Point]
 class MapMeta:
     def __init__(self, map_type: MapType):
         self._map_type = map_type
-        self._track, self._borders, self._finish_line = self._load_assets()
+        self._track, self._finish_line = self._load_assets()
         self._finish_line_coord, (self._car_initial_pos, self._car_initial_angle) = self._get_positions()
 
     @property
@@ -73,16 +75,24 @@ class MapMeta:
         return self._map_type
 
     @property
-    def track(self) -> Mask:
+    def track(self) -> Surface:
         return self._track
 
     @property
-    def borders(self) -> Mask:
-        return self._borders
+    def finish_line(self) -> Surface:
+        return self._finish_line
 
     @property
-    def finish_line(self) -> Mask:
-        return self._finish_line
+    def track_mask(self) -> Mask:
+        return get_mask(self._track)
+
+    @property
+    def borders_mask(self) -> Mask:
+        return get_mask(self._track, inverted=True)
+
+    @property
+    def finish_line_mask(self) -> Mask:
+        return get_mask(self._finish_line)
 
     @property
     def finish_line_coord(self) -> Position:
@@ -96,23 +106,20 @@ class MapMeta:
     def car_initial_angle(self) -> int:
         return self._car_initial_angle
 
-    def _load_assets(self) -> Tuple[Mask, Mask, Mask]:
-        """ Returns (track, borders, finish_line) """
+    def _load_assets(self) -> Tuple[Surface, Surface]:
+        """ Returns (track, finish_line) """
 
         if self.map_type == MapType.CIRCLE:
-            track = get_mask(CIRCLE_TRACK)
-            borders = get_mask(CIRCLE_TRACK, inverted=True)
-            finish_line = get_mask(FINISH_LINE_CIRCLE_TRACK)
+            track = CIRCLE_TRACK
+            finish_line = FINISH_LINE_CIRCLE_TRACK
         elif self.map_type == MapType.W_SHAPED:
-            track = get_mask(W_TRACK)
-            borders = get_mask(W_TRACK, inverted=True)
-            finish_line = get_mask(FINISH_LINE_W_TRACK)
+            track = W_TRACK
+            finish_line = FINISH_LINE_W_TRACK
         else:
-            track = get_mask(PWR_TRACK)
-            borders = get_mask(PWR_TRACK, inverted=True)
-            finish_line = get_mask(FINISH_LINE_PWR_TRACK)
+            track = PWR_TRACK
+            finish_line = FINISH_LINE_PWR_TRACK
 
-        return track, borders, finish_line
+        return track, finish_line
 
     def _get_positions(self) -> Tuple[Position, Tuple[Point, int]]:
         """ Returns (finish_line_coord, (car_initial_pos, car_angle)) """
