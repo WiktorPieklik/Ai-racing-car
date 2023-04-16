@@ -6,7 +6,7 @@ import pygame.draw
 from pygame import Color, Mask, Surface
 
 from .utils import Window, Image, rotate_image, scale_image, get_mask, Point, distance
-from .assets import CAR
+from .assets import CAR, AI_CAR
 
 
 class Car(ABC):
@@ -76,13 +76,15 @@ class Car(ABC):
     def draw(self, window: Window) -> None:
         rotate_image(window=window, image=self._img, top_left=(self._x, self._y), angle=self._angle)
 
-    def accelerate(self) -> None:
+    def accelerate(self) -> Optional[Tuple[float, float]]:
         self._velocity = min(self._velocity + self._acceleration, self._max_velocity)
-        self.move()
 
-    def decelerate(self) -> None:
+        return self.move()
+
+    def decelerate(self) -> Optional[Tuple[float, float]]:
         self._velocity = max(self._velocity - 1.85 * self._acceleration, 0)
-        self.move()
+
+        return self.move()
 
     def move(self) -> Optional[Tuple[float, float]]:
         if self.alive:
@@ -151,6 +153,27 @@ class PlayerCar(Car):
     ):
         super().__init__(
             img=scale_image(CAR, .65),
+            start_position=start_position,
+            max_velocity=max_velocity,
+            rotation_velocity=rotation_velocity,
+            start_angle=start_angle,
+            acceleration=acceleration,
+            track=track
+        )
+
+
+class AiCar(Car):
+    def __init__(
+            self,
+            max_velocity: float,
+            rotation_velocity: float,
+            track: Surface,
+            start_position: Tuple[int, int] = (0, 0),
+            start_angle: float = .0,
+            acceleration: float = .15
+    ):
+        super().__init__(
+            img=scale_image(AI_CAR, .35),
             start_position=start_position,
             max_velocity=max_velocity,
             rotation_velocity=rotation_velocity,

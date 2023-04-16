@@ -6,6 +6,7 @@ RAW_DIR = Path(".") / "src/game/raw"
 
 # Images
 CAR = load(RAW_DIR / "car.png")
+AI_CAR = load(RAW_DIR / "ai_car.png")
 CIRCLE_TRACK = load(RAW_DIR / "circle_track.png")
 FINISH_LINE_CIRCLE_TRACK = load(RAW_DIR / "finish_line_circle_track.png")
 W_TRACK = load(RAW_DIR / "w_track.png")
