@@ -1,10 +1,11 @@
 from abc import ABC
-from typing import Tuple, Optional, Callable
+from typing import Tuple, Optional, List
 from math import radians, cos, sin
 
-from pygame import Color, Mask
+import pygame.draw
+from pygame import Color, Mask, Surface
 
-from .utils import Window, Image, rotate_image, scale_image, get_mask
+from .utils import Window, Image, rotate_image, scale_image, get_mask, Point, distance
 from .assets import CAR
 
 
@@ -13,6 +14,7 @@ class Car(ABC):
             self,
             img: Image,
             start_position: Tuple[int, int],
+            track: Surface,
             max_velocity: float,
             rotation_velocity: float,
             start_angle: float = .0,
@@ -27,6 +29,8 @@ class Car(ABC):
         self._angle = start_angle
         self._acceleration = acceleration
         self.alive = True
+        self._radars: List[Tuple[int, Point]] = []
+        self._track = track
 
     def get_rect_center(self) -> Tuple[int, int]:
         return self.img.get_rect(topleft=(self._x, self._y)).center
@@ -80,17 +84,21 @@ class Car(ABC):
         self._velocity = max(self._velocity - 1.85 * self._acceleration, 0)
         self.move()
 
-    def move(self) -> None:
+    def move(self) -> Optional[Tuple[float, float]]:
         if self.alive:
             rad = radians(self._angle)
             dx = cos(rad) * self._velocity
             dy = sin(rad) * self._velocity
             self._x += dx
             self._y -= dy
+            self._calculate_radars()
 
-    def inertia(self):
+            return dx, dy
+
+    def inertia(self) -> Optional[Tuple[float, float]]:
         self._velocity = max(self._velocity - self._acceleration / 2, 0)
-        self.move()
+
+        return self.move()
 
     def bounce(self):
         self._velocity = - self._velocity
@@ -102,20 +110,25 @@ class Car(ABC):
 
         return poi
 
-    def radar(self, window: Window, angle: float):
-        length = 0
-        x, y = self.get_rect_center()
+    def draw_radars(self, window: Window) -> None:
+        for r_len, r_point in self._radars:
+            line = ((255, 255, 255), self.get_rect_center(), r_point, 1)
+            circle = ((0, 255, 0) if r_len == 200 else (255, 0, 0), r_point, 3)
+            pygame.draw.line(window, *line)
+            pygame.draw.circle(window, *circle)
 
-        while window.get_at((x, y)) != Color(0, 0, 0, 0) and length < 200:
-            length += 1
+    def _calculate_radars(self) -> None:
+        radar_angles = (-60, -30, 0, 30, 60)
+        self._radars = []
+        for angle in radar_angles:
+            length = 0
             x, y = self.get_rect_center()
-            x = int(x + cos(radians(self._angle + angle)) * length)
-            y = int(y - sin(radians(self._angle + angle)) * length)
-
-        line = ((255, 255, 255), self.get_rect_center(), (x, y), 1)
-        circle = ((0, 255, 0) if length == 200 else (255, 0, 0), (x, y), 3)
-
-        return line, circle
+            while self._track.get_at((x, y)) != Color(0, 0, 0, 0) and length < 200:
+                length += 1
+                x, y = self.get_rect_center()
+                x = int(x + cos(radians(self._angle + angle)) * length)
+                y = int(y - sin(radians(self._angle + angle)) * length)
+            self._radars.append((length, (x, y)))
 
     def reset(self, x: int, y: int, angle: int) -> None:
         self._x = x
@@ -123,6 +136,7 @@ class Car(ABC):
         self._angle = angle
         self._velocity = 0
         self.alive = True
+        self._calculate_radars()
 
 
 class PlayerCar(Car):
@@ -130,6 +144,7 @@ class PlayerCar(Car):
             self,
             max_velocity: float,
             rotation_velocity: float,
+            track: Surface,
             start_position: Tuple[int, int] = (0, 0),
             start_angle: float = .0,
             acceleration: float = .15
@@ -140,5 +155,6 @@ class PlayerCar(Car):
             max_velocity=max_velocity,
             rotation_velocity=rotation_velocity,
             start_angle=start_angle,
-            acceleration=acceleration
+            acceleration=acceleration,
+            track=track
         )

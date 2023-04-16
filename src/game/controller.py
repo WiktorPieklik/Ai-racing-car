@@ -29,7 +29,8 @@ class GameController:
             rotation_velocity=max_angular_velocity,
             start_position=self._map_meta.car_initial_pos,
             start_angle=self._map_meta.car_initial_angle,
-            acceleration=max_acceleration
+            acceleration=max_acceleration,
+            track=self._map_meta.track
         )
         self._fps = config('FPS', cast=int)
         self._window, self._clock = self._init_game()
@@ -54,7 +55,7 @@ class GameController:
             self._window.blit(self._map_meta.finish_line, (0, 0))
         self._player_car.draw(self._window)
         if self._draw_radars:
-            self._draw_player_car_radars()
+            self._player_car.draw_radars(self._window)
 
         lvl_text = MAIN_FONT.render(f"Level {self._state.level}", True, (255, 255, 255))
         time_text = MAIN_FONT.render(f"Time {self._state.level_time():.3f}s", True, (255, 255, 255))
@@ -66,13 +67,6 @@ class GameController:
     def _init_monit(self) -> None:
         display_text_center(self._window, f"Press any key to start {self._state.level} level!", MAIN_FONT)
         pygame.display.update()
-
-    def _draw_player_car_radars(self) -> None:
-        radars_angle = (-60, -30, 0, 30, 60)
-        for angle in radars_angle:
-            line, circle = self._player_car.radar(self._map_meta.track, angle)
-            pygame.draw.line(self._window, *line)
-            pygame.draw.circle(self._window, *circle)
 
     def _player_controls(self) -> None:
         keys = pygame.key.get_pressed()
