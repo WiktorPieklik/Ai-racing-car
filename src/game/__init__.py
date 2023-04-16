@@ -20,4 +20,4 @@ from .assets import (
 )
 from .cars import PlayerCar, Car
 from .meta import GameState, MapMeta, MapType
-from .controller import GameController
+from .controller import Controller, OnePlayerController
