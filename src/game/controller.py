@@ -133,6 +133,7 @@ class OnePlayerController(Controller):
         if crossed_finish_line_poi:
             if crossed_finish_line_poi[1] > self._map_meta.finish_line_crossing_point:
                 self._cars[0].bounce()
+                print(crossed_finish_line_poi[1])
             else:
                 self._reset_car(self._cars[0])
                 self._state.next_level()

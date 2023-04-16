@@ -168,6 +168,7 @@ class AiCar(Car):
             max_velocity: float,
             rotation_velocity: float,
             track: Surface,
+            movement_threshold: int,
             start_position: Tuple[int, int] = (0, 0),
             start_angle: float = .0,
             acceleration: float = .15
@@ -181,3 +182,64 @@ class AiCar(Car):
             acceleration=acceleration,
             track=track
         )
+        self.__bounce_count = 0
+        self._calculate_radars()
+        self.__movement_thresh = movement_threshold
+        self.stagnation = 0
+
+    def radars_distances(self) -> List[float]:
+        self._calculate_radars()
+        distances = []
+        for i, (_, r_point) in enumerate(self._radars):
+            dst = distance(self.get_rect_center(), r_point)
+            # -30, 0, 30 degrees radars need adjusting
+            if i in (1, 2, 3):
+                dst -= 45  # more or less
+            distances.append(dst)
+
+        return distances
+
+    def rotate(self, left: bool = False) -> None:
+        if self.alive:
+            super().rotate(left)
+            self.stagnation += 5
+            if self.stagnation >= self.__movement_thresh:
+                self.alive = False
+
+    def accelerate(self) -> Optional[Tuple[float, float]]:
+        self.stagnation = 0
+
+        return super().accelerate()
+
+    def decelerate(self) -> Optional[Tuple[float, float]]:
+        self.stagnation += 1
+        if self.stagnation >= self.__movement_thresh:
+            self.alive = False
+        if self.alive:
+            return super().decelerate()
+
+    def inertia(self) -> Optional[Tuple[float, float]]:
+        self.stagnation += 2
+        if self.stagnation >= self.__movement_thresh:
+            self.alive = False
+        if self.alive:
+            return super().inertia()
+
+    def draw_radars(self, window: Window) -> None:
+        if self.alive:
+            # self._calculate_radars()
+            super().draw_radars(window)
+
+    def _calculate_radars(self) -> None:
+        if self.alive:
+            super()._calculate_radars()
+
+    def bounce(self):
+        self.stagnation += 20
+        self.__bounce_count += 1
+        if self.stagnation >= self.__movement_thresh:
+            self.alive = False
+        if self.__bounce_count > 2:
+            self.alive = False
+        if self.alive:
+            super().bounce()

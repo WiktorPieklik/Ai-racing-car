@@ -140,6 +140,6 @@ class MapMeta:
         if self.map_type == MapType.CIRCLE:
             return 660
         elif self.map_type == MapType.W_SHAPED:
-            return 700
+            return 720
         else:
             return 640
