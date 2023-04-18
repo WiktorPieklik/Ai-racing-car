@@ -17,7 +17,11 @@ from .assets import (
     FINISH_LINE_W_TRACK,
     PWR_TRACK,
     FINISH_LINE_PWR_TRACK,
-    MAIN_FONT
+    MAIN_FONT,
+    K_UP,
+    K_DOWN,
+    K_LEFT,
+    K_RIGHT
 )
 from .cars import PlayerCar, AiCar, Car
 from .meta import GameState, MapMeta, MapType
