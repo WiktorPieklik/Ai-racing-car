@@ -1,3 +1,4 @@
+from __future__ import annotations
 from abc import ABC
 from typing import Tuple, Optional, List, Callable
 from math import radians, cos, sin
