@@ -29,7 +29,7 @@ class Car(ABC):
         self._angle = start_angle
         self._acceleration = acceleration
         self.alive = True
-        self._radars: List[Tuple[int, Point]] = []
+        self._radars: List[Tuple[int, Point]] = []  # radar's length & terminal point
         self._track = track
 
     def get_rect_center(self) -> Tuple[int, int]:
@@ -202,12 +202,12 @@ class AiCar(Car):
     def rotate(self, left: bool = False) -> None:
         if self.alive:
             super().rotate(left)
-            self.stagnation += 5
+            self.stagnation += 7
             if self.stagnation >= self.__movement_thresh:
                 self.alive = False
 
     def accelerate(self) -> Optional[Tuple[float, float]]:
-        self.stagnation = 0
+        self.stagnation -= 10
 
         return super().accelerate()
 
@@ -219,7 +219,7 @@ class AiCar(Car):
             return super().decelerate()
 
     def inertia(self) -> Optional[Tuple[float, float]]:
-        self.stagnation += 2
+        self.stagnation += 1
         if self.stagnation >= self.__movement_thresh:
             self.alive = False
         if self.alive:
@@ -227,7 +227,6 @@ class AiCar(Car):
 
     def draw_radars(self, window: Window) -> None:
         if self.alive:
-            # self._calculate_radars()
             super().draw_radars(window)
 
     def _calculate_radars(self) -> None:
@@ -239,7 +238,7 @@ class AiCar(Car):
         self.__bounce_count += 1
         if self.stagnation >= self.__movement_thresh:
             self.alive = False
-        if self.__bounce_count > 2:
+        if self.__bounce_count > 1:
             self.alive = False
         if self.alive:
             super().bounce()
