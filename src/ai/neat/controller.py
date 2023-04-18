@@ -36,18 +36,18 @@ class NeatController(Controller):
     def __init_car(self) -> AiCar:
         return AiCar(
             max_velocity=10.,
-            rotation_velocity=4.,
+            rotation_velocity=5.,
             acceleration=.15,
             track=self._map_meta.track,
             start_position=self._map_meta.car_initial_pos,
             start_angle=self._map_meta.car_initial_angle,
-            movement_threshold=30
+            movement_threshold=35
         )
 
     @staticmethod
     def __handle_car_movement(car: AiCar, movement: CarMovement) -> float:
         dxdy = None
-        reward = -3
+        reward = -2
         promote = False
         if movement == CarMovement.LEFT:
             car.rotate(left=True)
@@ -74,9 +74,10 @@ class NeatController(Controller):
             dxdy = car.decelerate()
         if movement == CarMovement.NOTHING:
             dxdy = car.inertia()
+            car.stagnation += 5
 
         if dxdy is not None:
-            reward = dxdy[0] + dxdy[1]
+            reward = dxdy[0] + dxdy[1] + car.velocity
             if promote:
                 reward *= 1.25
 
@@ -95,17 +96,23 @@ class NeatController(Controller):
     def run(self, genomes, config) -> None:
         self.__generation += 1
         self._cars = []
+        self.__nets = []
         self._run = True
         for _, genome in genomes:
             self.__nets.append(neat.nn.FeedForwardNetwork.create(genome, config))
             genome.fitness = 0
             self._cars.append(self.__init_car())
         self._state.start_level()
+        won_already = False
+        next_level = False
+        timeout = 600 * (len(genomes) / 150)
         while self._run:
             self._clock.tick(self._fps)
             self._draw()
             pygame.display.update()
             for i, car in enumerate(self._cars):
+                if car.alive:
+                    genomes[i][1].fitness -= 5
                 if not car.alive:
                     continue
                 output = self.__nets[i].activate(car.radars_distances())
@@ -122,17 +129,31 @@ class NeatController(Controller):
                         genomes[i][1].fitness -= 100
                     else:
                         print("Wow! You've made it!!!")
-                        self._state.next_level()
-                        genomes[i][1].fitness += 200 + reward
+                        if not won_already:
+                            next_level = True
+                        time_reward = max(timeout - self._state.level_time(), 0)
+                        genomes[i][1].fitness += 1000 + reward + time_reward
                         car.alive = False
+                        won_already = True
 
                 if car.alive:
                     genomes[i][1].fitness += reward
-                if genomes[i][1].fitness < -45:
-                    car.alive = False
 
             if self.cars_alive == 0:
                 self._run = False
+                if next_level:
+                    self._state.next_level()
                 break
-
-        # pygame.quit()
+            if self._state.level_time() > timeout:
+                self._run = False
+                if next_level:
+                    self._state.next_level()
+                break
+            if won_already and self.cars_alive < 3 and self._state.level_time() > timeout * .75:
+                self._run = False
+                for i, car in enumerate(self._cars):
+                    if car.alive:
+                        genomes[i][1].fitness = -200
+                if next_level:
+                    self._state.next_level()
+                break
