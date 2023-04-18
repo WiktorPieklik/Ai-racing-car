@@ -4,7 +4,8 @@ from subprocess import check_call
 dependencies = [
     'pygame',
     'python-decouple',
-    'neat-python'
+    'neat-python',
+    'dill'
 ]
 
 if __name__ == "__main__":
