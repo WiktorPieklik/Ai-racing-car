@@ -1,5 +1,5 @@
 from abc import ABC
-from typing import Tuple, Optional, List
+from typing import Tuple, Optional, List, Callable
 from math import radians, cos, sin
 
 import pygame.draw
@@ -162,6 +162,21 @@ class PlayerCar(Car):
         )
 
 
+def stagnate(stagnation: int) -> Callable:
+    stag = stagnation
+
+    def wrapper(func: Callable) -> Callable:
+        def inner(car: AiCar, *args, **kwargs):
+            car.stagnation += stag
+            if car.stagnation >= car.movement_threshold:
+                car.alive = False
+
+            return func(car, *args, **kwargs)
+
+        return inner
+    return wrapper
+
+
 class AiCar(Car):
     def __init__(
             self,
@@ -187,6 +202,10 @@ class AiCar(Car):
         self.__movement_thresh = movement_threshold
         self.stagnation = 0
 
+    @property
+    def movement_threshold(self) -> int:
+        return self.__movement_thresh
+
     def radars_distances(self) -> List[float]:
         self._calculate_radars()
         distances = []
@@ -199,29 +218,22 @@ class AiCar(Car):
 
         return distances
 
+    @stagnate(7)
     def rotate(self, left: bool = False) -> None:
         if self.alive:
             super().rotate(left)
-            self.stagnation += 7
-            if self.stagnation >= self.__movement_thresh:
-                self.alive = False
 
+    @stagnate(-10)
     def accelerate(self) -> Optional[Tuple[float, float]]:
-        self.stagnation -= 10
-
         return super().accelerate()
 
+    @stagnate(1)
     def decelerate(self) -> Optional[Tuple[float, float]]:
-        self.stagnation += 1
-        if self.stagnation >= self.__movement_thresh:
-            self.alive = False
         if self.alive:
             return super().decelerate()
 
+    @stagnate(1)
     def inertia(self) -> Optional[Tuple[float, float]]:
-        self.stagnation += 1
-        if self.stagnation >= self.__movement_thresh:
-            self.alive = False
         if self.alive:
             return super().inertia()
 
@@ -233,11 +245,9 @@ class AiCar(Car):
         if self.alive:
             super()._calculate_radars()
 
+    @stagnate(20)
     def bounce(self):
-        self.stagnation += 20
         self.__bounce_count += 1
-        if self.stagnation >= self.__movement_thresh:
-            self.alive = False
         if self.__bounce_count > 1:
             self.alive = False
         if self.alive:
