@@ -12,6 +12,7 @@ class NeatController(Controller):
             self,
             map_type: MapType,
             max_levels: int = 5,
+            timeout: int = 500,
             hardcore: bool = False
     ):
         super().__init__(
@@ -23,6 +24,7 @@ class NeatController(Controller):
         self.__nets = []
         self.__generation = 0
         self._cars: List[AiCar] = []
+        self._timeout = timeout
 
     @property
     def cars_alive(self) -> int:
@@ -32,6 +34,10 @@ class NeatController(Controller):
                 count += 1
 
         return count
+
+    @staticmethod
+    def quit() -> None:
+        pygame.quit()
 
     def __init_car(self) -> AiCar:
         return AiCar(
@@ -105,7 +111,7 @@ class NeatController(Controller):
         self._state.start_level()
         won_already = False
         next_level = False
-        timeout = 600 * (len(genomes) / 150)
+        timeout = self._timeout * (len(genomes) / 150)  # fixed genomes count
         while self._run:
             self._clock.tick(self._fps)
             self._draw()
@@ -139,12 +145,7 @@ class NeatController(Controller):
                 if car.alive:
                     genomes[i][1].fitness += reward
 
-            if self.cars_alive == 0:
-                self._run = False
-                if next_level:
-                    self._state.next_level()
-                break
-            if self._state.level_time() > timeout:
+            if self.cars_alive == 0 or self._state.level_time() > timeout:
                 self._run = False
                 if next_level:
                     self._state.next_level()
