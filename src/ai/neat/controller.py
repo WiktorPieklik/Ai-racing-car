@@ -1,6 +1,7 @@
 from typing import List
 from abc import ABC
 
+import numpy as np
 import pygame
 import neat
 
@@ -126,7 +127,7 @@ class NeatController(AiController):
                 if not car.alive:
                     continue
                 output = self.__nets[i].activate(car.radars_distances())
-                movement = CarMovement(output.index(max(output)))
+                movement = CarMovement(np.argmax(output))
                 reward = self._handle_car_movement(car, movement)
 
                 if car.is_colliding(self._map_meta.borders_mask):
