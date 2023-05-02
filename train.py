@@ -15,7 +15,8 @@ if __name__ == "__main__":
         neat.DefaultGenome,
         neat.DefaultReproduction,
         neat.DefaultSpeciesSet,
-        neat.DefaultStagnation, config_path
+        neat.DefaultStagnation,
+        config_path
     )
     population = neat.Population(config)
     population.add_reporter(neat.StdOutReporter(show_species_detail=True))
