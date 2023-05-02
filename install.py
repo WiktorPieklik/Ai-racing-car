@@ -6,7 +6,10 @@ dependencies = [
     'python-decouple',
     'neat-python',
     'dill',
-    'graphviz'
+    'graphviz',
+    'tensorflow-macos',
+    'tensorflow-metal',
+    'tf-agents'
 ]
 
 if __name__ == "__main__":
