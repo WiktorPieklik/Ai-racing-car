@@ -5,7 +5,8 @@ dependencies = [
     'pygame',
     'python-decouple',
     'neat-python',
-    'dill'
+    'dill',
+    'graphviz'
 ]
 
 if __name__ == "__main__":
