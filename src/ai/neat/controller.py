@@ -97,7 +97,6 @@ class NeatController(AiController):
     def __display_population_info(self) -> None:
         display_text(self._window, f"Generation: {self.__generation}", MAIN_FONT, (810, 0))
         display_text(self._window, f"Cars alive: {self.cars_alive}", MAIN_FONT, (810, 45))
-        pygame.display.update()
 
     def _draw(self) -> None:
         super()._draw()

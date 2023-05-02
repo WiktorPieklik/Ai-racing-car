@@ -3,11 +3,13 @@ from abc import ABC, abstractmethod
 
 import pygame
 from decouple import config
+from neat.nn.feed_forward import FeedForwardNetwork
 
 from .meta import GameState, MapMeta, MapType
-from .utils import Window, display_text_center, display_text
-from .assets import MAIN_FONT
-from .cars import PlayerCar, Car
+from .utils import Window, display_text_center, display_text, scale_image
+from .assets import MAIN_FONT, K_UP, K_DOWN, K_LEFT, K_RIGHT
+from .cars import PlayerCar, Car, AiCar
+from ..ai import CarMovement
 
 
 class Controller(ABC):
@@ -54,11 +56,28 @@ class Controller(ABC):
         self._window.blit(lvl_text, (10, self._window.get_height() - lvl_text.get_height() - 70))
         self._window.blit(time_text, (10, self._window.get_height() - time_text.get_height() - 20))
 
-        pygame.display.update()
-
     def _init_monit(self) -> None:
         display_text_center(self._window, f"Press any key to start {self._state.level} level!", MAIN_FONT)
         pygame.display.update()
+
+    @staticmethod
+    def _player_controls(car: Car) -> None:
+        keys = pygame.key.get_pressed()
+        changing_velocity = False
+
+        if keys[pygame.K_LEFT]:
+            car.rotate(left=True)
+        if keys[pygame.K_RIGHT]:
+            car.rotate(left=False)
+        if keys[pygame.K_UP]:
+            changing_velocity = True
+            car.accelerate()
+        if keys[pygame.K_DOWN]:
+            changing_velocity = True
+            car.decelerate()
+
+        if not changing_velocity:
+            car.inertia()
 
     @abstractmethod
     def run(self) -> None:
@@ -91,25 +110,11 @@ class OnePlayerController(Controller):
             acceleration=max_acceleration
         ))
 
-    def __player_controls(self) -> None:
-        keys = pygame.key.get_pressed()
-        changing_velocity = False
+    def _draw(self) -> None:
+        super()._draw()
+        pygame.display.update()
 
-        if keys[pygame.K_LEFT]:
-            self._cars[0].rotate(left=True)
-        if keys[pygame.K_RIGHT]:
-            self._cars[0].rotate(left=False)
-        if keys[pygame.K_UP]:
-            changing_velocity = True
-            self._cars[0].accelerate()
-        if keys[pygame.K_DOWN]:
-            changing_velocity = True
-            self._cars[0].decelerate()
-
-        if not changing_velocity:
-            self._cars[0].inertia()
-
-    def __handle_idleness(self) -> None:
+    def _handle_idleness(self) -> None:
         pygame.event.clear()
         while True:
             keydown = pygame.event.get(pygame.KEYDOWN)
@@ -123,20 +128,21 @@ class OnePlayerController(Controller):
                 self._run = True
                 break
 
-    def __game_loop_step(self) -> bool:
+    def _game_loop_step(self) -> bool:
         game_over = False
-        self.__player_controls()
-        if self._cars[0].is_colliding(self._map_meta.borders_mask):
-            self._cars[0].alive = False
-            game_over = True
-        crossed_finish_line_poi = self._cars[0].is_colliding(self._map_meta.finish_line_mask)
-        if crossed_finish_line_poi:
-            if crossed_finish_line_poi[1] > self._map_meta.finish_line_crossing_point:
-                self._cars[0].bounce()
-                print(crossed_finish_line_poi[1])
-            else:
-                self._reset_car(self._cars[0])
-                self._state.next_level()
+        for car in filter(lambda _car: isinstance(_car, PlayerCar), self._cars):
+            self._player_controls(car)
+            if car.is_colliding(self._map_meta.borders_mask):
+                car.alive = False
+                game_over = True
+            crossed_finish_line_poi = car.is_colliding(self._map_meta.finish_line_mask)
+            if crossed_finish_line_poi:
+                if crossed_finish_line_poi[1] > self._map_meta.finish_line_crossing_point:
+                    car.bounce()
+                    print(crossed_finish_line_poi[1])
+                else:
+                    self._reset_car(car)
+                    self._state.next_level()
 
         return game_over
 
@@ -147,17 +153,115 @@ class OnePlayerController(Controller):
             # region game idle & stop
             if not self._state.level_started:
                 self._init_monit()
-                self.__handle_idleness()
+                self._handle_idleness()
 
             if pygame.event.get(pygame.QUIT):
                 self._run = False
                 break
             # endregion
-            game_over = self.__game_loop_step()
+            game_over = self._game_loop_step()
             if game_over:
                 display_text(self._window, "You loser!", MAIN_FONT, (810, 0))
                 self._state.reset()
                 self._init_monit()
-                self.__handle_idleness()
+                self._handle_idleness()
 
         pygame.quit()
+
+
+class PlayerVersusAiController(OnePlayerController, ABC):
+    def __init__(
+            self,
+            map_type: MapType,
+            max_velocity: float = 10.,
+            max_angular_velocity: float = 4.,
+            max_acceleration: float = .15,
+            max_levels: int = 5,
+            draw_radars: bool = False,
+            hardcore: bool = False,
+            draw_ai_controls: bool = True
+    ):
+        super().__init__(
+            map_type=map_type,
+            max_velocity=max_velocity,
+            max_angular_velocity=max_angular_velocity,
+            max_acceleration=max_acceleration,
+            max_levels=max_levels,
+            draw_radars=draw_radars,
+            hardcore=hardcore
+        )
+        self._draw_ai_controls = draw_ai_controls
+        self._ai_movements: List[int] = []
+
+    @abstractmethod
+    def _handle_ai_movement(self, car: AiCar, movement: CarMovement) -> None:
+        raise NotImplementedError()
+
+    def _draw_ai_controls(self) -> None:
+        k_up = scale_image(K_UP, .2)
+        k_down = scale_image(K_DOWN, .2)
+        k_left = scale_image(K_LEFT, .2)
+        k_right = scale_image(K_RIGHT, .2)
+        alpha = 60
+
+        if CarMovement.LEFT not in self._ai_movements:
+            k_left.set_alpha(alpha)
+
+        if CarMovement.LEFT_UP not in self._ai_movements:
+            k_left.set_alpha(alpha)
+            k_up.set_alpha(alpha)
+
+        if CarMovement.UP not in self._ai_movements:
+            k_up.set_alpha(alpha)
+
+        if CarMovement.RIGHT_UP not in self._ai_movements:
+            k_up.set_alpha(alpha)
+            k_right.set_alpha(alpha)
+
+        if CarMovement.RIGHT not in self._ai_movements:
+            k_right.set_alpha(alpha)
+
+        if CarMovement.SLOW_DOWN not in self._ai_movements:
+            k_down.set_alpha(alpha)
+
+        if CarMovement.LEFT_SLOW_DOWN not in self._ai_movements:
+            k_left.set_alpha(alpha)
+            k_down.set_alpha(alpha)
+
+        if CarMovement.RIGHT_SLOW_DOWN not in self._ai_movements:
+            k_right.set_alpha(alpha)
+            k_down.set_alpha(alpha)
+
+        self._window.blit(k_up, (950, 10))
+        self._window.blit(k_down, (950, 105))
+        self._window.blit(k_left, (855, 105))
+        self._window.blit(k_right, (1045, 105))
+
+
+class PlayerVersusNeatController(PlayerVersusAiController):
+    def __init__(
+            self,
+            map_type: MapType,
+            genome_path: str,
+            max_velocity: float = 10.,
+            max_angular_velocity: float = 4.,
+            max_acceleration: float = .15,
+            max_levels: int = 5,
+            draw_radars: bool = False,
+            hardcore: bool = False,
+            draw_ai_controls: bool = True
+    ):
+        super().__init__(
+            map_type=map_type,
+            max_velocity=max_velocity,
+            max_angular_velocity=max_angular_velocity,
+            max_acceleration=max_acceleration,
+            max_levels=max_levels,
+            draw_radars=draw_radars,
+            hardcore=hardcore,
+            draw_ai_controls=draw_ai_controls
+        )
+        self.__genome_path = genome_path
+
+    def _handle_ai_movement(self, car: AiCar, movement: CarMovement) -> None:
+        pass
