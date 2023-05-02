@@ -4,6 +4,9 @@ from abc import ABC, abstractmethod
 import pygame
 from decouple import config
 from neat.nn.feed_forward import FeedForwardNetwork
+from neat.config import Config
+from dill import loads
+from numpy import argmax
 
 from .meta import GameState, MapMeta, MapType
 from .utils import Window, display_text_center, display_text, scale_image
@@ -110,9 +113,10 @@ class OnePlayerController(Controller):
             acceleration=max_acceleration
         ))
 
-    def _draw(self) -> None:
+    def _draw(self, update: bool = True) -> None:
         super()._draw()
-        pygame.display.update()
+        if update:
+            pygame.display.update()
 
     def _handle_idleness(self) -> None:
         pygame.event.clear()
@@ -124,25 +128,34 @@ class OnePlayerController(Controller):
                 break
             if keydown:
                 self._state.start_level()
-                self._reset_car(self._cars[0])
+                for car in self._cars:
+                    self._reset_car(car)
                 self._run = True
                 break
 
     def _game_loop_step(self) -> bool:
         game_over = False
+        next_level = False
         for car in filter(lambda _car: isinstance(_car, PlayerCar), self._cars):
             self._player_controls(car)
+        for car in self._cars:
             if car.is_colliding(self._map_meta.borders_mask):
                 car.alive = False
-                game_over = True
+                if isinstance(car, PlayerCar):
+                    game_over = True
             crossed_finish_line_poi = car.is_colliding(self._map_meta.finish_line_mask)
             if crossed_finish_line_poi:
                 if crossed_finish_line_poi[1] > self._map_meta.finish_line_crossing_point:
                     car.bounce()
                     print(crossed_finish_line_poi[1])
                 else:
-                    self._reset_car(car)
+                    if not isinstance(car, PlayerCar):
+                        game_over = True
+                    next_level = True
                     self._state.next_level()
+        if next_level:
+            for car in self._cars:
+                self._reset_car(car)
 
         return game_over
 
@@ -190,12 +203,41 @@ class PlayerVersusAiController(OnePlayerController, ABC):
             draw_radars=draw_radars,
             hardcore=hardcore
         )
-        self._draw_ai_controls = draw_ai_controls
+        self._draw_controls = draw_ai_controls
         self._ai_movements: List[int] = []
 
     @abstractmethod
     def _handle_ai_movement(self, car: AiCar, movement: CarMovement) -> None:
         raise NotImplementedError()
+
+    def _draw(self, update: bool = True) -> None:
+        super()._draw(update=False)
+        if self._draw_controls:
+            self._draw_ai_controls()
+        pygame.display.update()
+
+    def _get_alpha_arrows(self) -> Tuple[bool, bool, bool, bool]:
+        """ left, up, right, down """
+
+        arrows = False, False, False, False
+        if CarMovement.LEFT in self._ai_movements:
+            arrows = False, True, True, True
+        elif CarMovement.LEFT_UP in self._ai_movements:
+            arrows = False, False, True, True
+        elif CarMovement.UP in self._ai_movements:
+            arrows = True, False, True, True
+        elif CarMovement.RIGHT_UP in self._ai_movements:
+            arrows = True, False, False, True
+        elif CarMovement.RIGHT in self._ai_movements:
+            arrows = True, True, False, True
+        elif CarMovement.SLOW_DOWN in self._ai_movements:
+            arrows = True, True, True, False
+        elif CarMovement.LEFT_SLOW_DOWN in self._ai_movements:
+            arrows = False, True, True, False
+        elif CarMovement.RIGHT_SLOW_DOWN in self._ai_movements:
+            arrows = True, True, False, False
+
+        return arrows
 
     def _draw_ai_controls(self) -> None:
         k_up = scale_image(K_UP, .2)
@@ -203,34 +245,10 @@ class PlayerVersusAiController(OnePlayerController, ABC):
         k_left = scale_image(K_LEFT, .2)
         k_right = scale_image(K_RIGHT, .2)
         alpha = 60
-
-        if CarMovement.LEFT not in self._ai_movements:
-            k_left.set_alpha(alpha)
-
-        if CarMovement.LEFT_UP not in self._ai_movements:
-            k_left.set_alpha(alpha)
-            k_up.set_alpha(alpha)
-
-        if CarMovement.UP not in self._ai_movements:
-            k_up.set_alpha(alpha)
-
-        if CarMovement.RIGHT_UP not in self._ai_movements:
-            k_up.set_alpha(alpha)
-            k_right.set_alpha(alpha)
-
-        if CarMovement.RIGHT not in self._ai_movements:
-            k_right.set_alpha(alpha)
-
-        if CarMovement.SLOW_DOWN not in self._ai_movements:
-            k_down.set_alpha(alpha)
-
-        if CarMovement.LEFT_SLOW_DOWN not in self._ai_movements:
-            k_left.set_alpha(alpha)
-            k_down.set_alpha(alpha)
-
-        if CarMovement.RIGHT_SLOW_DOWN not in self._ai_movements:
-            k_right.set_alpha(alpha)
-            k_down.set_alpha(alpha)
+        which_to_alpha = self._get_alpha_arrows()
+        for should_alpha, arrow in zip(which_to_alpha, (k_left, k_up, k_right, k_down)):
+            if should_alpha:
+                arrow.set_alpha(alpha)
 
         self._window.blit(k_up, (950, 10))
         self._window.blit(k_down, (950, 105))
@@ -243,6 +261,7 @@ class PlayerVersusNeatController(PlayerVersusAiController):
             self,
             map_type: MapType,
             genome_path: str,
+            config: Config,
             max_velocity: float = 10.,
             max_angular_velocity: float = 4.,
             max_acceleration: float = .15,
@@ -261,7 +280,63 @@ class PlayerVersusNeatController(PlayerVersusAiController):
             hardcore=hardcore,
             draw_ai_controls=draw_ai_controls
         )
-        self.__genome_path = genome_path
+        self.__ann = self.__load_ann(genome_path, config)
+        self._cars.append(AiCar(
+            max_velocity=max_velocity,
+            rotation_velocity=max_angular_velocity,
+            track=self._map_meta.track,
+            start_position=self._map_meta.car_initial_pos,
+            start_angle=self._map_meta.car_initial_angle,
+            acceleration=max_acceleration,
+            training=False
+        ))
+
+    def _game_loop_step(self) -> bool:
+        # TODO: associate single net with single AiCar
+        for car in filter(lambda _car: isinstance(_car, AiCar), self._cars):
+            car: AiCar  # just for syntax highlighting
+            output = self.__ann.activate(car.radars_distances())
+            movement = CarMovement(argmax(output))
+            self._handle_ai_movement(car, movement)
+
+        return super()._game_loop_step()
+
+    @staticmethod
+    def __load_ann(genome_path: str, config: Config) -> FeedForwardNetwork:
+        with open(genome_path, 'rb') as fh:
+            genome = loads(fh.read())
+
+        return FeedForwardNetwork.create(genome, config)
 
     def _handle_ai_movement(self, car: AiCar, movement: CarMovement) -> None:
-        pass
+        self._ai_movements = []
+        if movement == CarMovement.LEFT:
+            car.rotate(left=True)
+            self._ai_movements.append(CarMovement.LEFT)
+        elif movement == CarMovement.LEFT_UP:
+            car.rotate(left=True)
+            car.accelerate()
+            self._ai_movements.append(CarMovement.LEFT_UP)
+        elif movement == CarMovement.UP:
+            car.accelerate()
+            self._ai_movements.append(CarMovement.UP)
+        elif movement == CarMovement.RIGHT_UP:
+            car.rotate(left=False)
+            car.accelerate()
+            self._ai_movements.append(CarMovement.RIGHT_UP)
+        elif movement == CarMovement.RIGHT:
+            car.rotate(left=False)
+            self._ai_movements.append(CarMovement.RIGHT)
+        elif movement == CarMovement.SLOW_DOWN:
+            car.decelerate()
+            self._ai_movements.append(CarMovement.SLOW_DOWN)
+        elif movement == CarMovement.LEFT_SLOW_DOWN:
+            car.rotate(left=True)
+            car.decelerate()
+            self._ai_movements.append(CarMovement.LEFT_SLOW_DOWN)
+        elif movement == CarMovement.RIGHT_SLOW_DOWN:
+            car.rotate(left=False)
+            car.decelerate()
+            self._ai_movements.append(CarMovement.RIGHT_SLOW_DOWN)
+        elif movement == CarMovement.NOTHING:
+            car.inertia()
