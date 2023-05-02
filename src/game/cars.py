@@ -184,7 +184,7 @@ class AiCar(Car):
             max_velocity: float,
             rotation_velocity: float,
             track: Surface,
-            movement_threshold: int,
+            movement_threshold: int = 1,
             start_position: Tuple[int, int] = (0, 0),
             start_angle: float = .0,
             acceleration: float = .15,
