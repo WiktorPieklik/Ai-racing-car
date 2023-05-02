@@ -1,53 +1,12 @@
 from typing import List
-from abc import ABC
 
 from numpy import argmax
 import pygame
 import neat
 
-from src.game import Controller, MapType, AiCar, display_text, MAIN_FONT, GameState
+from src.game import MapType, AiCar, display_text, MAIN_FONT
 from ..controls import CarMovement
-
-
-class AiController(Controller, ABC):
-    @staticmethod
-    def _handle_car_movement(car: AiCar, movement: CarMovement) -> float:
-        dxdy = None
-        reward = -2
-        promote = False
-        if movement == CarMovement.LEFT:
-            car.rotate(left=True)
-        if movement == CarMovement.LEFT_UP:
-            car.rotate(left=True)
-            dxdy = car.accelerate()
-            promote = True
-        if movement == CarMovement.UP:
-            dxdy = car.accelerate()
-            promote = True
-        if movement == CarMovement.RIGHT_UP:
-            car.rotate(left=False)
-            dxdy = car.accelerate()
-            promote = True
-        if movement == CarMovement.RIGHT:
-            car.rotate(left=False)
-        if movement == CarMovement.SLOW_DOWN:
-            dxdy = car.decelerate()
-        if movement == CarMovement.LEFT_SLOW_DOWN:
-            car.rotate(left=True)
-            dxdy = car.decelerate()
-        if movement == CarMovement.RIGHT_SLOW_DOWN:
-            car.rotate(left=False)
-            dxdy = car.decelerate()
-        if movement == CarMovement.NOTHING:
-            dxdy = car.inertia()
-            car.stagnation += 5
-
-        if dxdy is not None:
-            reward = dxdy[0] + dxdy[1] + car.velocity
-            if promote:
-                reward *= 1.25
-
-        return reward
+from ..controller import AiController
 
 
 class NeatController(AiController):
@@ -85,7 +44,7 @@ class NeatController(AiController):
     def __init_car(self) -> AiCar:
         return AiCar(
             max_velocity=10.,
-            rotation_velocity=5.,
+            rotation_velocity=6.,
             acceleration=.15,
             track=self._map_meta.track,
             start_position=self._map_meta.car_initial_pos,
@@ -154,7 +113,9 @@ class NeatController(AiController):
                 if next_level:
                     self._state.next_level()
                 break
-            if won_already and self.cars_alive < 3 and self._state.level_time() > timeout * .75:
+            if (won_already and self.cars_alive < 3 and self._state.level_time() > timeout * .75) or \
+                    (self._state.level_time() > timeout) or \
+                    (self.cars_alive == 1 and self._state.level_time() > timeout * .7):
                 self._run = False
                 for i, car in enumerate(self._cars):
                     if car.alive:
