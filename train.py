@@ -28,4 +28,3 @@ if __name__ == "__main__":
         tf.write(dumps(best_genome))
     with open('statistics', 'wb') as tf:
         tf.write(dumps(stats))
-
