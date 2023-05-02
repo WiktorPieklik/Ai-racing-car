@@ -168,12 +168,12 @@ def stagnate(stagnation: int) -> Callable:
 
     def wrapper(func: Callable) -> Callable:
         def inner(car: AiCar, *args, **kwargs):
-            car.stagnation += stag
-            if car.stagnation >= car.movement_threshold:
-                car.alive = False
+            if car.training:
+                car.stagnation += stag
+                if car.stagnation >= car.movement_threshold:
+                    car.alive = False
 
             return func(car, *args, **kwargs)
-
         return inner
     return wrapper
 
@@ -187,7 +187,8 @@ class AiCar(Car):
             movement_threshold: int,
             start_position: Tuple[int, int] = (0, 0),
             start_angle: float = .0,
-            acceleration: float = .15
+            acceleration: float = .15,
+            training: bool = True
     ):
         super().__init__(
             img=scale_image(AI_CAR, .35),
@@ -202,10 +203,15 @@ class AiCar(Car):
         self._calculate_radars()
         self.__movement_thresh = movement_threshold
         self.stagnation = 0
+        self._training = training
 
     @property
     def movement_threshold(self) -> int:
         return self.__movement_thresh
+
+    @property
+    def training(self) -> bool:
+        return self._training
 
     def radars_distances(self) -> List[float]:
         self._calculate_radars()
