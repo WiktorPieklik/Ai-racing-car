@@ -214,7 +214,8 @@ class PlayerVersusAiController(OnePlayerController, ABC):
         super()._draw(update=False)
         if self._draw_controls:
             self._draw_ai_controls()
-        pygame.display.update()
+        if update:
+            pygame.display.update()
 
     def _get_alpha_arrows(self) -> Tuple[bool, bool, bool, bool]:
         """ left, up, right, down """
