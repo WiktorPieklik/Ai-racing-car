@@ -1,4 +1,5 @@
 from typing import List
+from abc import ABC
 
 import pygame
 import neat
@@ -7,7 +8,48 @@ from src.game import Controller, MapType, AiCar, display_text, MAIN_FONT, GameSt
 from ..controls import CarMovement
 
 
-class NeatController(Controller):
+class AiController(Controller, ABC):
+    @staticmethod
+    def _handle_car_movement(car: AiCar, movement: CarMovement) -> float:
+        dxdy = None
+        reward = -2
+        promote = False
+        if movement == CarMovement.LEFT:
+            car.rotate(left=True)
+        if movement == CarMovement.LEFT_UP:
+            car.rotate(left=True)
+            dxdy = car.accelerate()
+            promote = True
+        if movement == CarMovement.UP:
+            dxdy = car.accelerate()
+            promote = True
+        if movement == CarMovement.RIGHT_UP:
+            car.rotate(left=False)
+            dxdy = car.accelerate()
+            promote = True
+        if movement == CarMovement.RIGHT:
+            car.rotate(left=False)
+        if movement == CarMovement.SLOW_DOWN:
+            dxdy = car.decelerate()
+        if movement == CarMovement.LEFT_SLOW_DOWN:
+            car.rotate(left=True)
+            dxdy = car.decelerate()
+        if movement == CarMovement.RIGHT_SLOW_DOWN:
+            car.rotate(left=False)
+            dxdy = car.decelerate()
+        if movement == CarMovement.NOTHING:
+            dxdy = car.inertia()
+            car.stagnation += 5
+
+        if dxdy is not None:
+            reward = dxdy[0] + dxdy[1] + car.velocity
+            if promote:
+                reward *= 1.25
+
+        return reward
+
+
+class NeatController(AiController):
     def __init__(
             self,
             map_type: MapType,
@@ -47,47 +89,9 @@ class NeatController(Controller):
             track=self._map_meta.track,
             start_position=self._map_meta.car_initial_pos,
             start_angle=self._map_meta.car_initial_angle,
-            movement_threshold=35
+            movement_threshold=35,
+            training=True
         )
-
-    @staticmethod
-    def __handle_car_movement(car: AiCar, movement: CarMovement) -> float:
-        dxdy = None
-        reward = -2
-        promote = False
-        if movement == CarMovement.LEFT:
-            car.rotate(left=True)
-        if movement == CarMovement.LEFT_UP:
-            car.rotate(left=True)
-            dxdy = car.accelerate()
-            promote = True
-        if movement == CarMovement.UP:
-            dxdy = car.accelerate()
-            promote = True
-        if movement == CarMovement.RIGHT_UP:
-            car.rotate(left=False)
-            dxdy = car.accelerate()
-            promote = True
-        if movement == CarMovement.RIGHT:
-            car.rotate(left=False)
-        if movement == CarMovement.SLOW_DOWN:
-            dxdy = car.decelerate()
-        if movement == CarMovement.LEFT_SLOW_DOWN:
-            car.rotate(left=True)
-            dxdy = car.decelerate()
-        if movement == CarMovement.RIGHT_SLOW_DOWN:
-            car.rotate(left=False)
-            dxdy = car.decelerate()
-        if movement == CarMovement.NOTHING:
-            dxdy = car.inertia()
-            car.stagnation += 5
-
-        if dxdy is not None:
-            reward = dxdy[0] + dxdy[1] + car.velocity
-            if promote:
-                reward *= 1.25
-
-        return reward
 
     def __display_population_info(self) -> None:
         display_text(self._window, f"Generation: {self.__generation}", MAIN_FONT, (810, 0))
@@ -99,7 +103,7 @@ class NeatController(Controller):
         self.__display_population_info()
         pygame.display.update()
 
-    def run(self, genomes, config) -> None:
+    def run(self, genomes: List[neat.genome.DefaultGenome], config: neat.config.Config) -> None:
         self.__generation += 1
         self._cars = []
         self.__nets = []
@@ -111,7 +115,7 @@ class NeatController(Controller):
         self._state.start_level()
         won_already = False
         next_level = False
-        timeout = self._timeout * (len(genomes) / 150)  # fixed genomes count
+        timeout = self._timeout * (len(genomes) / config.pop_size)  # fixed genomes count
         while self._run:
             self._clock.tick(self._fps)
             self._draw()
@@ -123,7 +127,7 @@ class NeatController(Controller):
                     continue
                 output = self.__nets[i].activate(car.radars_distances())
                 movement = CarMovement(output.index(max(output)))
-                reward = self.__handle_car_movement(car, movement)
+                reward = self._handle_car_movement(car, movement)
 
                 if car.is_colliding(self._map_meta.borders_mask):
                     car.alive = False
