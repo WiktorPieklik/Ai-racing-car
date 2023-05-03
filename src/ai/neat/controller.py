@@ -115,7 +115,7 @@ class NeatController(AiController):
                 break
             if (won_already and self.cars_alive < 3 and self._state.level_time() > timeout * .75) or \
                     (self._state.level_time() > timeout) or \
-                    (self.cars_alive == 1 and self._state.level_time() > timeout * .7):
+                    (self.cars_alive < 3 and self._state.level_time() > timeout * .7):
                 self._run = False
                 for i, car in enumerate(self._cars):
                     if car.alive:
