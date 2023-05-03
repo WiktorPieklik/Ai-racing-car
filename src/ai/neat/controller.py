@@ -4,8 +4,7 @@ from numpy import argmax
 import pygame
 import neat
 
-from src.game import MapType, AiCar, display_text, MAIN_FONT
-from ..controls import CarMovement
+from src.game import MapType, AiCar, display_text, MAIN_FONT, CarMovement
 from ..controller import AiController
 
 
