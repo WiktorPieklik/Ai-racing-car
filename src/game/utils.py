@@ -84,6 +84,8 @@ def get_alpha_arrows(ai_movements: List[CarMovement]) -> Tuple[bool, bool, bool,
         arrows = False, True, True, False
     elif CarMovement.RIGHT_SLOW_DOWN in ai_movements:
         arrows = True, True, False, False
+    elif CarMovement.NOTHING in ai_movements:
+        arrows = True, True, True, True
 
     return arrows
 
