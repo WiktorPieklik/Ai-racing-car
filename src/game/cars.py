@@ -189,6 +189,7 @@ class AiCar(Car):
             start_angle: float = .0,
             acceleration: float = .15,
             use_threshold: bool = True,
+            velocity: float = .0
     ):
         super().__init__(
             img=scale_image(AI_CAR, .35),
@@ -199,6 +200,7 @@ class AiCar(Car):
             acceleration=acceleration,
             track=track
         )
+        self._velocity = velocity
         self.__bounce_count = 0
         self._calculate_radars()
         self.__movement_thresh = movement_threshold
