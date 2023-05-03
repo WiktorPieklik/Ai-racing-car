@@ -49,7 +49,7 @@ class NeatController(AiController):
             start_position=self._map_meta.car_initial_pos,
             start_angle=self._map_meta.car_initial_angle,
             movement_threshold=35,
-            training=True
+            use_threshold=True
         )
 
     def __display_population_info(self) -> None:

@@ -289,7 +289,7 @@ class PlayerVersusNeatController(PlayerVersusAiController):
             start_position=self._map_meta.car_initial_pos,
             start_angle=self._map_meta.car_initial_angle,
             acceleration=max_acceleration,
-            training=False
+            use_threshold=False
         ))
 
     def _game_loop_step(self) -> bool:
