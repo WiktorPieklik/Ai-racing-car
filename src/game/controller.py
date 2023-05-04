@@ -192,7 +192,7 @@ class PlayerVersusAiController(OnePlayerController, ABC):
             max_levels: int = 5,
             draw_radars: bool = False,
             hardcore: bool = False,
-            draw_ai_controls: bool = True
+            draw_controls: bool = True
     ):
         super().__init__(
             map_type=map_type,
@@ -203,7 +203,7 @@ class PlayerVersusAiController(OnePlayerController, ABC):
             draw_radars=draw_radars,
             hardcore=hardcore
         )
-        self._draw_controls = draw_ai_controls
+        self._draw_controls = draw_controls
         self._ai_movements: List[CarMovement] = []
 
     @abstractmethod
@@ -216,45 +216,6 @@ class PlayerVersusAiController(OnePlayerController, ABC):
             draw_ai_controls(self._window, self._ai_movements)
         if update:
             pygame.display.update()
-
-    # def _get_alpha_arrows(self) -> Tuple[bool, bool, bool, bool]:
-    #     """ left, up, right, down """
-    #
-    #     arrows = False, False, False, False
-    #     if CarMovement.LEFT in self._ai_movements:
-    #         arrows = False, True, True, True
-    #     elif CarMovement.LEFT_UP in self._ai_movements:
-    #         arrows = False, False, True, True
-    #     elif CarMovement.UP in self._ai_movements:
-    #         arrows = True, False, True, True
-    #     elif CarMovement.RIGHT_UP in self._ai_movements:
-    #         arrows = True, False, False, True
-    #     elif CarMovement.RIGHT in self._ai_movements:
-    #         arrows = True, True, False, True
-    #     elif CarMovement.SLOW_DOWN in self._ai_movements:
-    #         arrows = True, True, True, False
-    #     elif CarMovement.LEFT_SLOW_DOWN in self._ai_movements:
-    #         arrows = False, True, True, False
-    #     elif CarMovement.RIGHT_SLOW_DOWN in self._ai_movements:
-    #         arrows = True, True, False, False
-    #
-    #     return arrows
-    #
-    # def _draw_ai_controls(self) -> None:
-    #     k_up = scale_image(K_UP, .2)
-    #     k_down = scale_image(K_DOWN, .2)
-    #     k_left = scale_image(K_LEFT, .2)
-    #     k_right = scale_image(K_RIGHT, .2)
-    #     alpha = 60
-    #     which_to_alpha = self._get_alpha_arrows()
-    #     for should_alpha, arrow in zip(which_to_alpha, (k_left, k_up, k_right, k_down)):
-    #         if should_alpha:
-    #             arrow.set_alpha(alpha)
-    #
-    #     self._window.blit(k_up, (950, 10))
-    #     self._window.blit(k_down, (950, 105))
-    #     self._window.blit(k_left, (855, 105))
-    #     self._window.blit(k_right, (1045, 105))
 
 
 class PlayerVersusNeatController(PlayerVersusAiController):
@@ -269,7 +230,7 @@ class PlayerVersusNeatController(PlayerVersusAiController):
             max_levels: int = 5,
             draw_radars: bool = False,
             hardcore: bool = False,
-            draw_ai_controls: bool = True
+            draw_controls: bool = True
     ):
         super().__init__(
             map_type=map_type,
@@ -279,7 +240,7 @@ class PlayerVersusNeatController(PlayerVersusAiController):
             max_levels=max_levels,
             draw_radars=draw_radars,
             hardcore=hardcore,
-            draw_ai_controls=draw_ai_controls
+            draw_controls=draw_controls
         )
         self.__ann = self.__load_ann(genome_path, config)
         self._cars.append(AiCar(
