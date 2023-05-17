@@ -6,7 +6,8 @@ dependencies = [
     'python-decouple',
     'neat-python',
     'dill',
-    'graphviz'
+    'graphviz',
+    'matplotlib'
 ]
 
 if __name__ == "__main__":
