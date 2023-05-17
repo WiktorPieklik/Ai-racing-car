@@ -1,6 +1,6 @@
-from src.game import GameController, MapType
+from src.game import OnePlayerController, MapType
 
 
 if __name__ == "__main__":
-    gc = GameController(MapType.PWR, draw_radars=True)
-    gc.run()
+    controller = OnePlayerController(MapType.PWR, draw_radars=True)
+    controller.run()

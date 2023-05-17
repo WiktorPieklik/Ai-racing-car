@@ -3,7 +3,11 @@ from subprocess import check_call
 
 dependencies = [
     'pygame',
-    'python-decouple'
+    'python-decouple',
+    'neat-python',
+    'dill',
+    'graphviz',
+    'matplotlib'
 ]
 
 if __name__ == "__main__":
