@@ -3,8 +3,7 @@ from typing import Tuple, List, Optional
 import pygame
 import numpy as np
 from tf_agents.environments.py_environment import PyEnvironment
-from tf_agents.environments.tf_environment import TFEnvironment
-from tf_agents.environments.tf_py_environment import TFPyEnvironment
+from tf_agents.environments.tf_py_environment import TFPyEnvironment, batched_py_environment
 from tf_agents.specs.array_spec import BoundedArraySpec
 from tf_agents.trajectories import time_step as ts
 
@@ -12,6 +11,10 @@ from src.game import MapType, AiCar, draw_ai_controls, CarMovement, Point
 from ..controller import AiController
 
 
+"""
+TODO: punishing for not using some actions (anything related with turning right)
+TODO: create checkpoints for AI to achieve - otherwise punishment
+"""
 class DqnController(AiController):
     def __init__(
             self,
@@ -60,7 +63,7 @@ class DqnController(AiController):
             start_position=self._map_meta.car_initial_pos if position is None else position,
             start_angle=self._map_meta.car_initial_angle if angle is None else angle,
             use_threshold=True,
-            movement_threshold=600,
+            movement_threshold=400,
             velocity=velocity
         ))
 
@@ -76,7 +79,6 @@ class DqnController(AiController):
         self.spawn_car()
         self._draw()
 
-
     def _draw(self) -> None:
         super()._draw()
         if self._draw_controls:
@@ -86,17 +88,22 @@ class DqnController(AiController):
     def run(self, action: int) -> Tuple[bool, float]:
         """ Return done, reward """
         movement = CarMovement(action)
-        reward = -5
+        reward = -50
         if movement == CarMovement.SLOW_DOWN:
-            reward -= 10
+            reward -= 50
         elif movement == CarMovement.UP:
-            reward += 10
+            reward += 20
+        elif movement == CarMovement.NOTHING:
+            reward -= 50
         done = False
         car = self._cars[0]
         if car.alive:
             reward += self._handle_car_movement(car, movement) + car.velocity
+            if car.velocity <= .005:
+                reward -= 100
             if car.is_colliding(self._map_meta.borders_mask):
                 car.alive = False
+                reward -= 1000
                 done = True
             crossed_finish_line_poi = car.is_colliding(self._map_meta.finish_line_mask)
             if crossed_finish_line_poi:
@@ -106,7 +113,7 @@ class DqnController(AiController):
                 else:
                     print("Yeah! Did it!!!")
                     self._state.next_level()
-                    reward += 1000
+                    reward += 10000
                     car.alive = False
                     done = True
         else:
@@ -115,7 +122,15 @@ class DqnController(AiController):
         self._clock.tick(self._fps)
         self._draw()
 
+        if self._state.level_time() > 400:
+            done, reward = True, -100
+
         return done, reward
+
+
+"""
+TODO: CarRacingEnv constructor params for DqnController
+"""
 
 
 class CarRacingEnv(PyEnvironment):
@@ -140,10 +155,10 @@ class CarRacingEnv(PyEnvironment):
     def close(self) -> None:
         self._controller.quit()
 
-    def get_state(self):
+    def get_state(self) -> Tuple[Point, float, float]:
         return self._controller.get_state()
 
-    def set_state(self, state):
+    def set_state(self, state: Tuple[Point, float, float]):
         self._controller.set_state(state[0], state[1], state[2])
 
     def _step(self, action):
@@ -158,7 +173,7 @@ class CarRacingEnv(PyEnvironment):
                 return ts.termination(np.array(self._observation, dtype=np.float), reward)
             else:
                 return ts.transition(
-                    np.array(self._observation, dtype=np.float), reward=reward, discount=1.)
+                    np.array(self._observation, dtype=np.float), reward=reward, discount=.85)
         else:
             raise ValueError("action must be in range [0, 8]")
 
@@ -170,5 +185,12 @@ class CarRacingEnv(PyEnvironment):
         return ts.restart(np.array(self._observation, dtype=np.float))
 
     @staticmethod
-    def tf_environment() -> TFEnvironment:
+    def tf_environment() -> TFPyEnvironment:
         return TFPyEnvironment(CarRacingEnv())
+
+    @staticmethod
+    def tf_batched_environment(batch_size: int) -> TFPyEnvironment:
+        envs = [CarRacingEnv() for _ in range(batch_size)]
+        batched_env = batched_py_environment.BatchedPyEnvironment(envs=envs, multithreading=False)
+
+        return TFPyEnvironment(batched_env)
