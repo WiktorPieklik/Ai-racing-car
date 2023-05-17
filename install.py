@@ -9,7 +9,8 @@ dependencies = [
     'graphviz',
     'tensorflow-macos',
     'tensorflow-metal',
-    'tf-agents'
+    'tf-agents',
+    'matplotlib'
 ]
 
 if __name__ == "__main__":
