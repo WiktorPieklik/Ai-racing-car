@@ -63,12 +63,15 @@ class DqnController(AiController):
             start_position=self._map_meta.car_initial_pos if position is None else position,
             start_angle=self._map_meta.car_initial_angle if angle is None else angle,
             use_threshold=True,
-            movement_threshold=400,
+            movement_threshold=550,
             velocity=velocity
         ))
 
     def get_observation(self) -> List[float]:
-        return self._cars[0].radars_distances()
+        observation = self._cars[0].radars_distances()
+        observation.extend([self._cars[0].velocity, self._cars[0].angle])
+
+        return observation
 
     @staticmethod
     def quit() -> None:
@@ -88,11 +91,11 @@ class DqnController(AiController):
     def run(self, action: int) -> Tuple[bool, float]:
         """ Return done, reward """
         movement = CarMovement(action)
-        reward = -50
+        reward = -20
         if movement == CarMovement.SLOW_DOWN:
             reward -= 50
         elif movement == CarMovement.UP:
-            reward += 20
+            reward += 50
         elif movement == CarMovement.NOTHING:
             reward -= 50
         done = False
@@ -112,12 +115,12 @@ class DqnController(AiController):
                     reward -= 100
                 else:
                     print("Yeah! Did it!!!")
+                    reward += 10000 + 1000 * (400 / self._state.level_time())  # time bonus
                     self._state.next_level()
-                    reward += 10000
                     car.alive = False
                     done = True
         else:
-            reward = -100
+            reward = -1000
             done = True
         self._clock.tick(self._fps)
         self._draw()
@@ -138,7 +141,7 @@ class CarRacingEnv(PyEnvironment):
         self._action_spec = BoundedArraySpec(
             shape=(), dtype=np.int32, minimum=0, maximum=8, name='action')
         self._observation_spec = BoundedArraySpec(
-            shape=(5,), dtype=np.float, name='observation')
+            shape=(7,), dtype=np.float, name='observation')
         self._observation: List[float] = []
         self._episode_ended = False
         self._controller = DqnController(MapType.W_SHAPED, draw_controls=True)
@@ -173,7 +176,7 @@ class CarRacingEnv(PyEnvironment):
                 return ts.termination(np.array(self._observation, dtype=np.float), reward)
             else:
                 return ts.transition(
-                    np.array(self._observation, dtype=np.float), reward=reward, discount=.85)
+                    np.array(self._observation, dtype=np.float), reward=reward, discount=.9)
         else:
             raise ValueError("action must be in range [0, 8]")
 
