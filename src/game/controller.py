@@ -21,10 +21,12 @@ class Controller(ABC):
             map_type: MapType,
             max_levels: int = 5,
             draw_radars: bool = False,
-            hardcore: bool = False
+            hardcore: bool = False,
+            draw_checkpoints: bool = False,
     ):
         self._map_meta = MapMeta(map_type)
         self._draw_radars = draw_radars or hardcore
+        self._draw_checkpoints = draw_checkpoints
         self._hardcore = hardcore
         self._state = GameState(max_levels=max_levels)
         self._cars: List[Car] = []
@@ -53,11 +55,18 @@ class Controller(ABC):
             car.draw(self._window)
             if self._draw_radars:
                 car.draw_radars(self._window)
+        if self._draw_checkpoints:
+            self.__draw_checkpoints()
 
         lvl_text = MAIN_FONT.render(f"Level {self._state.level}", True, (255, 255, 255))
         time_text = MAIN_FONT.render(f"Time {self._state.level_time():.3f}s", True, (255, 255, 255))
         self._window.blit(lvl_text, (10, self._window.get_height() - lvl_text.get_height() - 70))
         self._window.blit(time_text, (10, self._window.get_height() - time_text.get_height() - 20))
+
+    def __draw_checkpoints(self) -> None:
+        for checkpoint in self._map_meta.checkpoints:
+            if checkpoint.active:
+                pygame.draw.rect(self._window, (0, 255, 0), checkpoint)
 
     def _init_monit(self) -> None:
         display_text_center(self._window, f"Press any key to start {self._state.level} level!", MAIN_FONT)
@@ -96,13 +105,15 @@ class OnePlayerController(Controller):
             max_acceleration: float = .15,
             max_levels: int = 5,
             draw_radars: bool = False,
-            hardcore: bool = False
+            hardcore: bool = False,
+            draw_checkpoints: bool = False
     ):
         super().__init__(
             map_type=map_type,
             max_levels=max_levels,
             draw_radars=draw_radars,
-            hardcore=hardcore
+            hardcore=hardcore,
+            draw_checkpoints=draw_checkpoints
         )
         self._cars.append(PlayerCar(
             max_velocity=max_velocity,
@@ -139,6 +150,10 @@ class OnePlayerController(Controller):
         for car in filter(lambda _car: isinstance(_car, PlayerCar), self._cars):
             self._player_controls(car)
         for car in self._cars:
+            for checkpoint in self._map_meta.checkpoints:
+                if checkpoint.active:
+                    if car.is_colliding(checkpoint.mask, checkpoint.rect.left, checkpoint.rect.top):
+                        checkpoint.deactivate()
             if car.is_colliding(self._map_meta.borders_mask):
                 car.alive = False
                 if isinstance(car, PlayerCar):

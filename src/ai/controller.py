@@ -10,13 +10,15 @@ class AiController(Controller, ABC):
             map_type: MapType,
             max_levels: int = 5,
             draw_radars: bool = False,
-            hardcore: bool = False
+            hardcore: bool = False,
+            draw_checkpoints: bool = False
     ):
         super().__init__(
             map_type=map_type,
             max_levels=max_levels,
             draw_radars=draw_radars,
-            hardcore=hardcore
+            hardcore=hardcore,
+            draw_checkpoints=draw_checkpoints
         )
         self._ai_movements: List[CarMovement] = []
 

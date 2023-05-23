@@ -2,9 +2,10 @@ from __future__ import annotations
 
 from time import time
 from enum import Enum
-from typing import Union, Tuple
+from typing import Union, Tuple, List
 
-from pygame import Mask, Surface
+import pygame
+from pygame import Mask, Surface, Rect
 
 from .utils import get_mask, Point
 from .assets import (
@@ -15,6 +16,31 @@ from .assets import (
     PWR_TRACK,
     FINISH_LINE_PWR_TRACK
 )
+
+
+class Checkpoint:
+    def __init__(self, rect: Rect):
+        self._rect = rect
+        self._active = True
+        self._mask = pygame.mask.Mask((rect.width, rect.height), True)
+
+    @property
+    def active(self) -> bool:
+        return self._active
+
+    @property
+    def rect(self) -> Rect:
+        return self._rect
+
+    @property
+    def mask(self) -> pygame.mask.Mask:
+        return self._mask
+
+    def deactivate(self) -> None:
+        self._active = False
+
+    def activate(self) -> None:
+        self._active = True
 
 
 class GameState:
@@ -69,6 +95,7 @@ class MapMeta:
         self._track, self._finish_line = self._load_assets()
         self._car_initial_pos, self._car_initial_angle = self._get_positions()
         self._finish_line_crossing_point = self._get_crossing_point()
+        self._checkpoints = self._get_checkpoints()
 
     @property
     def map_type(self) -> MapType:
@@ -81,6 +108,10 @@ class MapMeta:
     @property
     def finish_line(self) -> Surface:
         return self._finish_line
+
+    @property
+    def checkpoints(self) -> List[Checkpoint]:
+        return self._checkpoints
 
     @property
     def track_mask(self) -> Mask:
@@ -143,3 +174,16 @@ class MapMeta:
             return 720
         else:
             return 640
+
+    def _get_checkpoints(self) -> List[Checkpoint]:
+        if self.map_type == MapType.W_SHAPED:
+            return [Checkpoint(rect) for rect in [
+                Rect(1059, 762, 100, 100),
+                Rect(1485, 610, 100, 100),
+                Rect(1452, 242, 100, 100),
+                Rect(1005, 336, 100, 100),
+                Rect(598, 286, 100, 100),
+                Rect(325, 358, 100, 100)]
+            ]
+        else:
+            return []  # for now

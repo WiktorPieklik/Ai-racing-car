@@ -25,6 +25,6 @@ from .assets import (
     K_RIGHT
 )
 from .cars import PlayerCar, AiCar, Car
-from .meta import GameState, MapMeta, MapType
+from .meta import GameState, MapMeta, MapType, Checkpoint
 from .controller import Controller, OnePlayerController, PlayerVersusNeatController
 from .controls import CarMovement
