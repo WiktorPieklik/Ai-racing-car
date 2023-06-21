@@ -1,6 +1,8 @@
 ## Project related ##
 .env
 checkopoints
+ckpt-*
+checkpoint
 
 ### Linux ###
 *~
