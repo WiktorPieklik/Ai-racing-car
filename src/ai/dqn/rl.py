@@ -1,36 +1,7 @@
-import tensorflow as tf
 from tf_agents.agents import DqnAgent
 from tf_agents.environments.tf_environment import TFEnvironment
-from tf_agents.utils.common import element_wise_squared_loss
 from tf_agents.replay_buffers.tf_uniform_replay_buffer import TFUniformReplayBuffer
 from tf_agents.trajectories.trajectory import from_transition
-from tf_agents.networks.sequential import Sequential
-
-
-def get_ann(n_observations: int, n_actions: int) -> tf.keras.models.Model:
-    return Sequential([
-        tf.keras.layers.InputLayer((1, n_observations)),
-        tf.keras.layers.Dense(24, activation='relu'),
-        tf.keras.layers.Dense(16, activation='relu'),
-        tf.keras.layers.Dense(n_actions, activation=None)
-    ])
-
-
-def get_agent(model: tf.keras.models.Model, env: TFEnvironment) -> DqnAgent:
-    train_step_counter = tf.Variable(0)
-    agent = DqnAgent(
-        time_step_spec=env.time_step_spec(),
-        action_spec=env.action_spec(),
-        q_network=model,
-        optimizer=tf.keras.optimizers.legacy.Adam(),
-        td_errors_loss_fn=element_wise_squared_loss,
-        train_step_counter=train_step_counter,
-        epsilon_greedy=None,
-        boltzmann_temperature=1.
-    )
-    agent.initialize()
-
-    return agent
 
 
 def compute_avg_return(env: TFEnvironment, policy, num_episodes: int = 10) -> float:

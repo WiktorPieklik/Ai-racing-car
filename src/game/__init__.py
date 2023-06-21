@@ -26,5 +26,11 @@ from .assets import (
 )
 from .cars import PlayerCar, AiCar, Car
 from .meta import GameState, MapMeta, MapType, Checkpoint
-from .controller import Controller, OnePlayerController, PlayerVersusNeatController
+from .controller import (
+    Controller,
+    AiController,
+    OnePlayerController,
+    PlayerVersusNeatController,
+    PlayerVersusDqnController
+)
 from .controls import CarMovement

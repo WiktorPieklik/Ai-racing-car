@@ -1,4 +1,4 @@
-from typing import Tuple, List, Optional
+from typing import Tuple, List, Optional, Callable
 
 import pygame
 import numpy as np
@@ -7,8 +7,7 @@ from tf_agents.environments.tf_py_environment import TFPyEnvironment, batched_py
 from tf_agents.specs.array_spec import BoundedArraySpec
 from tf_agents.trajectories import time_step as ts
 
-from src.game import MapType, AiCar, draw_ai_controls, CarMovement, Point
-from ..controller import AiController
+from src.game import MapType, AiCar, draw_ai_controls, CarMovement, Point, AiController
 
 
 """
@@ -156,14 +155,18 @@ TODO: CarRacingEnv constructor params for DqnController
 
 
 class CarRacingEnv(PyEnvironment):
-    def __init__(self):
+    def __init__(self, with_gui: bool = True, get_observation: Callable = None):
         self._action_spec = BoundedArraySpec(
             shape=(), dtype=np.int32, minimum=0, maximum=8, name='action')
         self._observation_spec = BoundedArraySpec(
             shape=(5,), dtype=np.float, name='observation')
         self._observation: List[float] = []
         self._episode_ended = False
-        self._controller = DqnController(MapType.PWR, draw_controls=True)
+        self._with_gui = with_gui
+        if with_gui:
+            self._controller = DqnController(MapType.PWR, draw_controls=True)
+        else:
+            self._get_observation = get_observation
 
     def observation_spec(self):
         return self._observation_spec
@@ -175,41 +178,52 @@ class CarRacingEnv(PyEnvironment):
         pass
 
     def close(self) -> None:
-        self._controller.quit()
+        if self._with_gui:
+            self._controller.quit()
 
     def get_state(self) -> Tuple[Point, float, float]:
-        return self._controller.get_state()
+        if self._with_gui:
+            return self._controller.get_state()
+
+        return (0, 0), 0., 0.
 
     def set_state(self, state: Tuple[Point, float, float]):
-        self._controller.set_state(state[0], state[1], state[2])
+        if self._with_gui:
+            self._controller.set_state(state[0], state[1], state[2])
 
     def _step(self, action):
-        if self._episode_ended:
-            return self._reset()
-        if 0 <= action <= 8:
-            done, reward = self._controller.run(action)
-            # print(f"Reward: {reward}")
-            self._observation = self._controller.get_observation()
-            if done:
-                self._episode_ended = True
+        if self._with_gui:
+            if self._episode_ended:
+                return self._reset()
+            if 0 <= action <= 8:
+                done, reward = self._controller.run(action)
+                self._observation = self._controller.get_observation()
+                if done:
+                    self._episode_ended = True
 
-                return ts.termination(np.array(self._observation, dtype=np.float), reward)
+                    return ts.termination(np.array(self._observation, dtype=np.float), reward)
+                else:
+                    return ts.transition(
+                        np.array(self._observation, dtype=np.float), reward=reward, discount=.9)
             else:
-                return ts.transition(
-                    np.array(self._observation, dtype=np.float), reward=reward, discount=.9)
+                raise ValueError("action must be in range [0, 8]")
         else:
-            raise ValueError("action must be in range [0, 8]")
+            return ts.transition(
+                np.array(self._get_observation(), dtype=np.float), reward=1, discount=.9)
 
     def _reset(self):
-        self._controller.reset()
-        self._observation = self._controller.get_observation()
+        if self._with_gui:
+            self._controller.reset()
+            self._observation = self._controller.get_observation()
+        else:
+            self._observation = self._get_observation()
         self._episode_ended = False
 
         return ts.restart(np.array(self._observation, dtype=np.float))
 
     @staticmethod
-    def tf_environment() -> TFPyEnvironment:
-        return TFPyEnvironment(CarRacingEnv())
+    def tf_environment(with_gui: bool = True, get_observation: Callable = None) -> TFPyEnvironment:
+        return TFPyEnvironment(CarRacingEnv(with_gui=with_gui, get_observation=get_observation))
 
     @staticmethod
     def tf_batched_environment(batch_size: int) -> TFPyEnvironment:
