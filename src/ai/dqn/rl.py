@@ -10,11 +10,9 @@ from tf_agents.networks.sequential import Sequential
 def get_ann(n_observations: int, n_actions: int) -> tf.keras.models.Model:
     return Sequential([
         tf.keras.layers.InputLayer((1, n_observations)),
-        tf.keras.layers.Dense(512, activation='relu'),
-        tf.keras.layers.Dropout(.4),
-        tf.keras.layers.Dense(256, activation='relu'),
-        tf.keras.layers.Dropout(.3),
-        tf.keras.layers.Dense(n_actions, activation='linear')
+        tf.keras.layers.Dense(24, activation='relu'),
+        tf.keras.layers.Dense(16, activation='relu'),
+        tf.keras.layers.Dense(n_actions, activation=None)
     ])
 
 
@@ -27,6 +25,8 @@ def get_agent(model: tf.keras.models.Model, env: TFEnvironment) -> DqnAgent:
         optimizer=tf.keras.optimizers.legacy.Adam(),
         td_errors_loss_fn=element_wise_squared_loss,
         train_step_counter=train_step_counter,
+        epsilon_greedy=None,
+        boltzmann_temperature=1.
     )
     agent.initialize()
 

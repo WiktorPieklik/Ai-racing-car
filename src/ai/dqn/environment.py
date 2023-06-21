@@ -13,21 +13,24 @@ from ..controller import AiController
 
 """
 TODO: punishing for not using some actions (anything related with turning right)
-TODO: create checkpoints for AI to achieve - otherwise punishment
 """
+
+
 class DqnController(AiController):
     def __init__(
             self,
             map_type: MapType,
             max_levels: int = 5,
             hardcore: bool = False,
-            draw_controls: bool = False
+            draw_controls: bool = False,
+            draw_checkpoints: bool = True
     ):
         super().__init__(
             map_type=map_type,
             max_levels=max_levels,
             draw_radars=True,
-            hardcore=hardcore
+            hardcore=hardcore,
+            draw_checkpoints=draw_checkpoints
         )
         self._draw_controls = draw_controls
         self._cars: List[AiCar] = []  # just for typing issues
@@ -54,6 +57,9 @@ class DqnController(AiController):
             angle: Optional[float] = None,
             velocity: float = .0
     ) -> None:
+        if self._draw_checkpoints:
+            for checkpoint in self._map_meta.checkpoints:
+                checkpoint.activate()
         self._cars = []
         self._cars.append(AiCar(
             max_velocity=10,
@@ -68,10 +74,7 @@ class DqnController(AiController):
         ))
 
     def get_observation(self) -> List[float]:
-        observation = self._cars[0].radars_distances()
-        observation.extend([self._cars[0].velocity, self._cars[0].angle])
-
-        return observation
+        return self._cars[0].radars_distances()
 
     @staticmethod
     def quit() -> None:
@@ -98,12 +101,21 @@ class DqnController(AiController):
             reward += 50
         elif movement == CarMovement.NOTHING:
             reward -= 50
+        elif movement == CarMovement.RIGHT or movement == CarMovement.LEFT:
+            reward -= 50
         done = False
         car = self._cars[0]
         if car.alive:
             reward += self._handle_car_movement(car, movement) + car.velocity
             if car.velocity <= .005:
                 reward -= 100
+            if self._draw_checkpoints:
+                for checkpoint in self._map_meta.checkpoints:
+                    if checkpoint.active:
+                        if car.is_colliding(checkpoint.mask, checkpoint.rect.left, checkpoint.rect.top):
+                            checkpoint.deactivate()
+                            reward += 1000
+                            car.stagnation = 0
             if car.is_colliding(self._map_meta.borders_mask):
                 car.alive = False
                 reward -= 1000
@@ -112,7 +124,7 @@ class DqnController(AiController):
             if crossed_finish_line_poi:
                 if crossed_finish_line_poi[1] > self._map_meta.finish_line_crossing_point:
                     car.bounce()
-                    reward -= 100
+                    reward -= 1000
                 else:
                     print("Yeah! Did it!!!")
                     reward += 10000 + 1000 * (400 / self._state.level_time())  # time bonus
@@ -120,13 +132,20 @@ class DqnController(AiController):
                     car.alive = False
                     done = True
         else:
-            reward = -1000
+            reward -= 100
             done = True
         self._clock.tick(self._fps)
         self._draw()
 
         if self._state.level_time() > 400:
             done, reward = True, -100
+
+        if done and self._draw_checkpoints:
+            punishment = 0
+            for checkpoint in self._map_meta.checkpoints:
+                if checkpoint.active:
+                    punishment -= 1000
+            reward += punishment
 
         return done, reward
 
@@ -141,10 +160,10 @@ class CarRacingEnv(PyEnvironment):
         self._action_spec = BoundedArraySpec(
             shape=(), dtype=np.int32, minimum=0, maximum=8, name='action')
         self._observation_spec = BoundedArraySpec(
-            shape=(7,), dtype=np.float, name='observation')
+            shape=(5,), dtype=np.float, name='observation')
         self._observation: List[float] = []
         self._episode_ended = False
-        self._controller = DqnController(MapType.W_SHAPED, draw_controls=True)
+        self._controller = DqnController(MapType.PWR, draw_controls=True)
 
     def observation_spec(self):
         return self._observation_spec
@@ -169,6 +188,7 @@ class CarRacingEnv(PyEnvironment):
             return self._reset()
         if 0 <= action <= 8:
             done, reward = self._controller.run(action)
+            # print(f"Reward: {reward}")
             self._observation = self._controller.get_observation()
             if done:
                 self._episode_ended = True
