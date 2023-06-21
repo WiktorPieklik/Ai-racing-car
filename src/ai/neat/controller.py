@@ -4,8 +4,7 @@ from numpy import argmax
 import pygame
 import neat
 
-from src.game import MapType, AiCar, display_text, MAIN_FONT
-from ..controls import CarMovement
+from src.game import MapType, AiCar, display_text, MAIN_FONT, CarMovement
 from ..controller import AiController
 
 
@@ -50,7 +49,7 @@ class NeatController(AiController):
             start_position=self._map_meta.car_initial_pos,
             start_angle=self._map_meta.car_initial_angle,
             movement_threshold=35,
-            training=True
+            use_threshold=True
         )
 
     def __display_population_info(self) -> None:
@@ -115,7 +114,7 @@ class NeatController(AiController):
                 break
             if (won_already and self.cars_alive < 3 and self._state.level_time() > timeout * .75) or \
                     (self._state.level_time() > timeout) or \
-                    (self.cars_alive < 3 and self._state.level_time() > timeout * .7):
+                    (self.cars_alive == 1 and self._state.level_time() > timeout * .7):
                 self._run = False
                 for i, car in enumerate(self._cars):
                     if car.alive:

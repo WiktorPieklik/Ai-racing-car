@@ -7,6 +7,9 @@ dependencies = [
     'neat-python',
     'dill',
     'graphviz',
+    'tensorflow-macos',
+    'tensorflow-metal',
+    'tf-agents',
     'matplotlib'
 ]
 

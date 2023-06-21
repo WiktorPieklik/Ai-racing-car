@@ -1,10 +1,13 @@
-from typing import Union, Tuple
+from typing import Union, Tuple, List
 from math import sqrt
 
 from pygame import Surface, SurfaceType, Mask
 from pygame.mask import from_surface
 from pygame.transform import scale, rotate
 from pygame.font import SysFont
+
+from .controls import CarMovement
+from .assets import K_UP, K_DOWN, K_LEFT, K_RIGHT
 
 Window = Union[Surface, SurfaceType]
 Image = Union[Surface, SurfaceType]
@@ -59,3 +62,46 @@ def distance(a: Point, b: Point) -> float:
     dy = a[1] - b[1]
 
     return sqrt(dx**2 + dy**2)
+
+
+def get_alpha_arrows(ai_movements: List[CarMovement]) -> Tuple[bool, bool, bool, bool]:
+    """ left, up, right, down """
+
+    arrows = False, False, False, False
+    if CarMovement.LEFT in ai_movements:
+        arrows = False, True, True, True
+    elif CarMovement.LEFT_UP in ai_movements:
+        arrows = False, False, True, True
+    elif CarMovement.UP in ai_movements:
+        arrows = True, False, True, True
+    elif CarMovement.RIGHT_UP in ai_movements:
+        arrows = True, False, False, True
+    elif CarMovement.RIGHT in ai_movements:
+        arrows = True, True, False, True
+    elif CarMovement.SLOW_DOWN in ai_movements:
+        arrows = True, True, True, False
+    elif CarMovement.LEFT_SLOW_DOWN in ai_movements:
+        arrows = False, True, True, False
+    elif CarMovement.RIGHT_SLOW_DOWN in ai_movements:
+        arrows = True, True, False, False
+    elif CarMovement.NOTHING in ai_movements:
+        arrows = True, True, True, True
+
+    return arrows
+
+
+def draw_ai_controls(window: Window, ai_movements: List[CarMovement]) -> None:
+    k_up = scale_image(K_UP, .2)
+    k_down = scale_image(K_DOWN, .2)
+    k_left = scale_image(K_LEFT, .2)
+    k_right = scale_image(K_RIGHT, .2)
+    alpha = 60
+    which_to_alpha = get_alpha_arrows(ai_movements)
+    for should_alpha, arrow in zip(which_to_alpha, (k_left, k_up, k_right, k_down)):
+        if should_alpha:
+            arrow.set_alpha(alpha)
+
+    window.blit(k_up, (950, 10))
+    window.blit(k_down, (950, 105))
+    window.blit(k_left, (855, 105))
+    window.blit(k_right, (1045, 105))
