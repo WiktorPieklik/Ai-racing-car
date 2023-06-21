@@ -185,5 +185,17 @@ class MapMeta:
                 Rect(598, 286, 100, 100),
                 Rect(325, 358, 100, 100)]
             ]
+        elif self.map_type == MapType.PWR:
+            return [Checkpoint(rect) for rect in [
+                Rect(735, 903, 100, 100),
+                Rect(1180, 923, 100, 100),
+                Rect(1669, 708, 100, 100),
+                Rect(1667, 381, 100, 100),
+                Rect(1433, 111, 100, 100),
+                Rect(1010, 501, 100, 100),
+                Rect(691, 391, 100, 100),
+                Rect(394, 178, 100, 100),
+                Rect(106, 331, 100, 100)]
+            ]
         else:
-            return []  # for now
+            return []
