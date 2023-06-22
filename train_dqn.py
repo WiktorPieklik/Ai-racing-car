@@ -3,12 +3,11 @@ from tf_agents.utils.common import function, Checkpointer
 
 from src.ai.dqn import (
     CarRacingEnv,
-    get_ann,
-    get_agent,
     compute_avg_return,
     get_replay_buffer,
     collect_step
 )
+from src.ai import get_ann, get_agent
 
 
 if __name__ == "__main__":
@@ -16,7 +15,7 @@ if __name__ == "__main__":
     # env = CarRacingEnv.tf_batched_environment(batch_size)
     env = CarRacingEnv.tf_environment()
     model = get_ann(5, 9)
-    agent = get_agent(model, env)
+    agent = get_agent(model, env.time_step_spec(), env.action_spec())
     num_iterations = 10_000
     collect_steps_per_iteration = 12
     replay_buffer = get_replay_buffer(agent, batch_size=env.batch_size)

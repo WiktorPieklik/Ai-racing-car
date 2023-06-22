@@ -81,9 +81,9 @@ class GameState:
 
 
 class MapType(Enum):
-    CIRCLE = 1
-    W_SHAPED = 2
-    PWR = 3
+    CIRCLE = 0
+    W_SHAPED = 1
+    PWR = 2
 
 
 Position = Tuple[Point, Point]

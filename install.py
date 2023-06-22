@@ -10,7 +10,8 @@ dependencies = [
     'tensorflow-macos',
     'tensorflow-metal',
     'tf-agents',
-    'matplotlib'
+    'matplotlib',
+    'bullet'
 ]
 
 if __name__ == "__main__":
